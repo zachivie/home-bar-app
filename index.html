@@ -1,0 +1,791 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>The Home Bar — A Field Guide</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#3c5a45">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Home Bar">
+<link rel="apple-touch-icon" href="icon-192.png">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,500;0,600;1,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+html{scroll-behavior:smooth}
+:root{
+  --bg:#f2e9d8; --panel:#fbf7ee; --muted:#7c6f5a; --text:#2b241c; --line:#ddcda8; --chip:#ece1c4;
+  --ok:#4b6b4f; --ok-bg:rgba(75,107,79,.13); --warn:#a8752c; --warn-bg:rgba(168,117,44,.14);
+  --bad:#9c4a30; --bad-bg:rgba(156,74,48,.13); --accent:#3c5a45; --accent-ink:#f6f1e4;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:'Inter',system-ui,-apple-system,Segoe UI,Arial,sans-serif}
+h1,h2,h3{font-family:'Fraunces',Georgia,serif}
+header{padding:30px 18px 14px;max-width:1150px;margin:auto;display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;border-bottom:1px solid var(--line)}
+h1{font-size:32px;margin:0 0 6px;font-weight:600;letter-spacing:.01em}
+h1 em{font-style:italic;font-weight:500;color:var(--accent)}
+h2{font-size:20px;margin:0 0 4px;color:var(--text);font-weight:600}
+.eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:600;margin-bottom:6px;display:block}
+p{color:var(--muted);margin:0}
+main{max-width:1150px;margin:auto;padding:16px 18px 52px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:20px;margin:16px 0}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+button{background:var(--panel);border:1px solid var(--line);color:var(--text);padding:10px 16px;border-radius:4px;
+font-size:13px;cursor:pointer;font-family:'Inter',sans-serif}
+button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600;
+text-transform:uppercase;letter-spacing:.06em;font-size:12.5px}
+button:hover{filter:brightness(1.08)}
+input[type=text],textarea,select{background:#fffdf8;border:1px solid var(--line);color:var(--text);padding:10px 12px;
+border-radius:4px;font-size:14px;width:100%;font-family:'Inter',sans-serif}
+textarea{min-height:90px;font-family:inherit;resize:vertical}
+.small{font-size:12.5px;color:var(--muted)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-top:2px}
+.stat{background:#fffdf8;border:1px solid var(--line);border-radius:4px;padding:14px;text-align:left;cursor:pointer;
+transition:border-color .12s ease;font-family:inherit;border-bottom:3px solid var(--line)}
+.stat:hover{border-color:var(--accent)}
+.stat.active{border-bottom-color:var(--accent)}
+.stat strong{display:block;font-size:28px;color:var(--text);font-family:'Fraunces',serif;font-weight:600}
+.stat span{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.08em}
+.badge{display:inline-block;border-radius:3px;padding:3px 9px;font-size:11px;margin:0 5px 5px 0;
+text-transform:uppercase;letter-spacing:.05em;border:1px solid transparent}
+.ok{background:var(--ok-bg);color:var(--ok);border-color:rgba(75,107,79,.3)}
+.warn{background:var(--warn-bg);color:var(--warn);border-color:rgba(168,117,44,.3)}
+.bad{background:var(--bad-bg);color:var(--bad);border-color:rgba(156,74,48,.3)}
+.neutral{background:var(--chip);color:var(--muted);border-color:var(--line)}
+.chip{background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:7px 12px;color:var(--text);
+cursor:pointer;font-size:12.5px}
+.chip.active{border-color:var(--accent);color:var(--accent);font-weight:600;background:rgba(60,90,69,.08)}
+.filters{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:12px;margin-top:12px}
+.card{background:#fffdf8;border:1px solid var(--line);border-radius:5px;padding:16px;cursor:pointer}
+.card-head{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.head-actions{display:flex;align-items:center;gap:10px;flex:none}
+.pin-btn{background:none;border:none;padding:0;font-size:19px;line-height:1;color:var(--line);cursor:pointer}
+.pin-btn.pinned{color:var(--warn)}
+.pin-btn:hover{color:var(--warn)}
+.chevron{color:var(--muted);font-size:12px;transition:transform .15s ease;flex:none}
+.card.expanded .chevron{transform:rotate(180deg)}
+.card .ing-list{display:none}
+.card.expanded .ing-list{display:block}
+.card h3{margin:0 0 4px;font-size:18px;font-weight:600}
+.meta{font-size:11.5px;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.04em}
+ul{margin:8px 0 0;padding-left:18px;color:#4a4030;font-size:14px}
+.missing{color:var(--warn)}
+.amt{color:var(--muted);font-variant-numeric:tabular-nums}
+.pantry-toggles{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.pantry-toggles label{background:var(--chip);border:1px solid var(--line);border-radius:999px;padding:7px 11px;
+font-size:13px;cursor:pointer}
+.sync-mini{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px;white-space:nowrap}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--muted);flex:none}
+.dot.live{background:var(--ok)}
+.dot.snapshot{background:var(--warn)}
+.sync-mini button{background:none;border:none;color:var(--accent);padding:0;font-size:12px;text-decoration:underline;cursor:pointer}
+.conn-panel{display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
+.conn-panel.open{display:block}
+table{width:100%;border-collapse:collapse;font-size:13.5px;margin-top:8px}
+th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line)}
+th{color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.05em}
+.roi-count{font-weight:600;color:var(--ok);font-family:'Fraunces',serif}
+.paste-line{display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line);font-size:13.5px}
+.paste-line select{width:auto;flex:1}
+.paste-result{margin-top:12px;padding:14px;border-radius:5px;background:#fffdf8;border:1px solid var(--line)}
+.paste-result h3, .paste-result strong{font-family:'Fraunces',serif}
+@media(min-width:820px){.two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px}}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>The Home Bar <em>— A Field Guide</em></h1>
+    <p>A running account of what's on the shelf, what's worth pouring tonight, and what's worth chasing down next.</p>
+  </div>
+  <div class="sync-mini">
+    <span class="dot" id="syncDot"></span><span id="syncLabel">snapshot</span>
+    <button id="btnToggleConn" type="button">adjust the source</button>
+  </div>
+</header>
+<main>
+
+<section class="panel" id="connPanel">
+  <div class="conn-panel" id="connBody">
+    <p class="small" id="syncHelp" style="margin-bottom:10px"></p>
+    <p class="small"><strong>Google Sheet</strong> — File &gt; Share &gt; Publish to web, publish the Inventory tab as CSV, paste the link below. Do the same for the Pantry tab.</p>
+    <div class="row">
+      <input type="text" id="sheetInvUrl" placeholder="Published CSV link for the Inventory tab" />
+      <input type="text" id="sheetPantryUrl" placeholder="Published CSV link for the Pantry tab" />
+      <button class="primary" id="btnConnectSheet">Connect Google Sheet</button>
+    </div>
+    <p class="small" style="margin-top:12px"><strong>Or a local file</strong> — pick your .xlsx directly.</p>
+    <div class="row">
+      <button id="btnConnect">Connect local file</button>
+      <button id="btnRefresh" style="display:none">Refresh from file</button>
+      <input type="file" id="fileFallback" accept=".xlsx" style="display:none" />
+    </div>
+  </div>
+</section>
+
+<section class="panel">
+  <span class="eyebrow">At a Glance</span>
+  <div class="stats" id="statTiles">
+    <button type="button" class="stat active" data-filter="all" id="statAll"><strong id="countAll">0</strong><span>In the Catalog</span></button>
+    <button type="button" class="stat" data-filter="now" id="statNow"><strong id="countNow">0</strong><span>Ready to Pour</span></button>
+    <button type="button" class="stat" data-filter="one" id="statOne"><strong id="countOne">0</strong><span>One Bottle Out</span></button>
+    <button type="button" class="stat" data-filter="two" id="statTwo"><strong id="countTwo">0</strong><span>Two Bottles Out</span></button>
+    <button type="button" class="stat" data-filter="fav" id="statFav"><strong id="countFav">0</strong><span>★ Favorites</span></button>
+  </div>
+  <p class="small" style="margin-top:8px">Tap a number to jump to that list.</p>
+</section>
+
+<section class="panel">
+  <span class="eyebrow">Field Research</span>
+  <h2>Chasing a Drink from the Internet?</h2>
+  <p class="small" style="margin-top:4px">Give us a name — Negroni Sbagliato, Paper Plane, Coffee Negroni — and we'll pull the recipe from the catalog. Don't know the name? Paste what you've got, one line each.</p>
+  <textarea id="pasteBox" placeholder="Try a name like &quot;negroni sbagliato&quot; or paste:&#10;2 oz gin&#10;0.75 oz lime juice&#10;0.5 oz simple syrup&#10;dash orange bitters" style="margin-top:10px"></textarea>
+  <div class="row" style="margin-top:8px">
+    <button class="primary" id="btnParse">Track It Down</button>
+  </div>
+  <div id="pasteLines"></div>
+  <div id="pasteResult"></div>
+</section>
+
+<section class="panel">
+  <span class="eyebrow">The Catalog</span>
+  <h2>What's Pourable</h2>
+  <div class="row" style="margin-top:10px">
+    <input type="text" id="search" placeholder="Search by name, spirit, or mood (patio, dessert, spirit-forward...)" />
+  </div>
+  <div class="filters">
+    <select id="baseFilter"><option value="all">All spirits</option></select>
+  </div>
+  <p class="small" style="margin-top:2px">Tap tags to combine them — patio + gin finds both.</p>
+  <div class="filters" id="tagFilters"></div>
+  <div class="row" style="margin-top:4px">
+    <span class="small" id="cardCount"></span>
+    <button type="button" id="btnExpandAll" style="margin-left:auto">Show Notes</button>
+    <button type="button" id="btnCollapseAll">Hide Notes</button>
+  </div>
+  <div class="grid" id="cards"></div>
+</section>
+
+<div class="two-col">
+<section class="panel">
+  <span class="eyebrow">On the Counter</span>
+  <h2>Today's Fresh Goods</h2>
+  <p class="small" style="margin-top:4px">What's actually fresh right now — toggle honestly, this won't touch the sheet.</p>
+  <div class="pantry-toggles" id="pantryToggles"></div>
+</section>
+
+<section class="panel">
+  <span class="eyebrow">The Shopping List</span>
+  <h2>Worth Adding to the Shelf</h2>
+  <p class="small" style="margin-top:4px">The single bottle that unlocks the most new pours.</p>
+  <table id="roiTable"><thead><tr><th>Bottle</th><th>Unlocks</th><th>Gets You Closer</th></tr></thead><tbody></tbody></table>
+</section>
+</div>
+
+</main>
+<script>
+const BUNDLE = {"canon": {"Amaro Nonino": {"category": "Amaro", "source": "inventory"}, "American Whiskey": {"category": "Whiskey", "source": "inventory"}, "Aromatic Bitters": {"category": "Bitters", "source": "inventory"}, "Añejo Tequila": {"category": "Tequila", "source": "inventory"}, "Black Walnut Bitters": {"category": "Bitters", "source": "inventory"}, "Bourbon": {"category": "Whiskey", "source": "inventory"}, "Cocktail Cherries": {"category": "Garnish", "source": "inventory"}, "Coffee Liqueur": {"category": "Liqueur", "source": "inventory"}, "Dry Vermouth": {"category": "Fortified Wine", "source": "inventory"}, "Extra Añejo Tequila": {"category": "Tequila", "source": "inventory"}, "Falernum": {"category": "Liqueur", "source": "inventory"}, "Gin": {"category": "Gin", "source": "inventory"}, "Irish Whiskey": {"category": "Whiskey", "source": "inventory"}, "Lavender Hibiscus Syrup": {"category": "Syrup", "source": "inventory"}, "Licor 43": {"category": "Liqueur", "source": "inventory"}, "Orange Bitters": {"category": "Bitters", "source": "inventory"}, "Peppermint Schnapps": {"category": "Liqueur", "source": "inventory"}, "Reposado Tequila": {"category": "Tequila", "source": "inventory"}, "Rye Whiskey": {"category": "Whiskey", "source": "inventory"}, "Scotch": {"category": "Whiskey", "source": "inventory"}, "Simple Syrup": {"category": "Syrup", "source": "inventory"}, "Smoked Maple Syrup": {"category": "Syrup", "source": "inventory"}, "Strawberry Rhubarb Liqueur": {"category": "Liqueur", "source": "inventory"}, "Sweet Vermouth": {"category": "Fortified Wine", "source": "inventory"}, "Sweetened Lime Syrup": {"category": "Syrup", "source": "inventory"}, "Triple Sec": {"category": "Liqueur", "source": "inventory"}, "Vanilla Vodka": {"category": "Vodka", "source": "inventory"}, "White Rum": {"category": "Rum", "source": "inventory"}, "Club Soda": {"category": "Mixer", "source": "pantry"}, "Cola": {"category": "Mixer", "source": "pantry"}, "Cream": {"category": "Fresh", "source": "pantry"}, "Egg White": {"category": "Fresh", "source": "pantry"}, "Ginger Beer": {"category": "Mixer", "source": "pantry"}, "Grapefruit Juice": {"category": "Fresh", "source": "pantry"}, "Lemon Juice": {"category": "Fresh", "source": "pantry"}, "Lime Juice": {"category": "Fresh", "source": "pantry"}, "Mint": {"category": "Fresh", "source": "pantry"}, "Orange Juice": {"category": "Fresh", "source": "pantry"}, "Salt": {"category": "Pantry", "source": "pantry"}, "Sparkling Wine": {"category": "Wine", "source": "pantry"}, "Sugar": {"category": "Pantry", "source": "pantry"}, "Tonic Water": {"category": "Mixer", "source": "pantry"}, "Campari": {"category": "Amaro", "source": "shopping"}, "Aperol": {"category": "Amaro", "source": "shopping"}, "Vodka": {"category": "Vodka", "source": "shopping"}, "Cognac": {"category": "Brandy", "source": "shopping"}, "Mezcal": {"category": "Tequila", "source": "shopping"}, "Green Chartreuse": {"category": "Liqueur", "source": "shopping"}, "Yellow Chartreuse": {"category": "Liqueur", "source": "shopping"}, "Maraschino Liqueur": {"category": "Liqueur", "source": "shopping"}, "Benedictine": {"category": "Liqueur", "source": "shopping"}, "Fernet Branca": {"category": "Amaro", "source": "shopping"}, "Drambuie": {"category": "Liqueur", "source": "shopping"}, "Crème de Violette": {"category": "Liqueur", "source": "shopping"}, "Amaretto": {"category": "Liqueur", "source": "shopping"}, "Agave Syrup": {"category": "Syrup", "source": "shopping"}, "Honey Syrup": {"category": "Syrup", "source": "shopping"}, "Cranberry Juice": {"category": "Fresh", "source": "shopping"}, "Pineapple Juice": {"category": "Fresh", "source": "shopping"}, "Coffee": {"category": "Fresh", "source": "shopping"}, "Absinthe": {"category": "Liqueur", "source": "shopping"}, "Grenadine": {"category": "Syrup", "source": "shopping"}, "Orgeat": {"category": "Syrup", "source": "shopping"}, "Crème de Cassis": {"category": "Liqueur", "source": "shopping"}, "Crème de Menthe": {"category": "Liqueur", "source": "shopping"}, "Aged Rum": {"category": "Rum", "source": "shopping"}, "Coconut Cream": {"category": "Fresh", "source": "shopping"}, "Ginger Syrup": {"category": "Syrup", "source": "shopping"}, "Demerara Syrup": {"category": "Syrup", "source": "shopping"}, "Peach Liqueur": {"category": "Liqueur", "source": "shopping"}, "Ginger Ale": {"category": "Mixer", "source": "shopping"}, "Peychaud's Bitters": {"category": "Bitters", "source": "shopping"}, "Elderflower Liqueur": {"category": "Liqueur", "source": "shopping"}, "Orange Curaçao": {"category": "Liqueur", "source": "shopping"}, "Passion Fruit Syrup": {"category": "Syrup", "source": "shopping"}, "Tomato Juice": {"category": "Fresh", "source": "shopping"}, "Suze": {"category": "Liqueur", "source": "shopping"}, "Peach Schnapps": {"category": "Liqueur", "source": "shopping"}, "Chambord": {"category": "Liqueur", "source": "shopping"}, "Raspberry Syrup": {"category": "Syrup", "source": "shopping"}, "Jalapeño": {"category": "Fresh", "source": "shopping"}, "Basil": {"category": "Fresh", "source": "shopping"}, "Cucumber": {"category": "Fresh", "source": "shopping"}}, "recipes": [{"name": "Old Fashioned", "family": "Old Fashioned", "base": "Whiskey", "style": "Spirit-forward", "difficulty": "Easy", "glass": "Rocks", "tags": ["classic", "whiskey", "low effort"], "ingredients": [{"name": "Bourbon", "amount": "2 oz"}, {"name": "Simple Syrup", "amount": "1/4 oz"}, {"name": "Aromatic Bitters", "amount": "2 dashes"}], "source": "sheet"}, {"name": "Maple Old Fashioned", "family": "Old Fashioned", "base": "Whiskey", "style": "Spirit-forward", "difficulty": "Easy", "glass": "Rocks", "tags": ["whiskey", "maple", "fall"], "ingredients": [{"name": "Bourbon", "amount": "2 oz"}, {"name": "Smoked Maple Syrup", "amount": "1/4 oz"}, {"name": "Aromatic Bitters", "amount": "2 dashes"}], "source": "sheet"}, {"name": "Black Walnut Old Fashioned", "family": "Old Fashioned", "base": "Whiskey", "style": "Spirit-forward", "difficulty": "Easy", "glass": "Rocks", "tags": ["whiskey", "dessert", "fall"], "ingredients": [{"name": "Bourbon", "amount": "2 oz"}, {"name": "Simple Syrup", "amount": "1/4 oz"}, {"name": "Black Walnut Bitters", "amount": "2 dashes"}], "source": "sheet"}, {"name": "Manhattan", "family": "Manhattan", "base": "Whiskey", "style": "Spirit-forward", "difficulty": "Easy", "glass": "Coupe", "tags": ["classic", "whiskey"], "ingredients": [{"name": "Rye Whiskey", "amount": "2 oz"}, {"name": "Sweet Vermouth", "amount": "1 oz"}, {"name": "Aromatic Bitters", "amount": "2 dashes"}, {"name": "Cocktail Cherries", "amount": "1 for garnish"}], "source": "sheet"}, {"name": "Bourbon Manhattan", "family": "Manhattan", "base": "Whiskey", "style": "Spirit-forward", "difficulty": "Easy", "glass": "Coupe", "tags": ["classic", "whiskey"], "ingredients": [{"name": "Bourbon", "amount": "2 oz"}, {"name": "Sweet Vermouth", "amount": "1 oz"}, {"name": "Aromatic Bitters", "amount": "2 dashes"}, {"name": "Cocktail Cherries", "amount": "1 for garnish"}], "source": "sheet"}, {"name": "Perfect Manhattan", "family": "Manhattan", "base": "Whiskey", "style": "Spirit-forward", "difficulty": "Medium", "glass": "Coupe", "tags": ["classic", "whiskey"], "ingredients": [{"name": "Rye Whiskey", "amount": "2 oz"}, {"name": "Sweet Vermouth", "amount": "1/2 oz"}, {"name": "Dry Vermouth", "amount": "1/2 oz"}, {"name": "Aromatic Bitters", "amount": "2 dashes"}, {"name": "Cocktail Cherries", "amount": "1 for garnish"}], "source": "sheet"}, {"name": "Rob Roy", "family": "Manhattan", "base": "Scotch", "style": "Spirit-forward", "difficulty": "Easy", "glass": "Coupe", "tags": ["classic", "scotch"], "ingredients": [{"name": "Scotch", "amount": "2 oz"}, {"name": "Sweet Vermouth", "amount": "1 oz"}, {"name": "Aromatic Bitters", "amount": "2 dashes"}, {"name": "Cocktail Cherries", "amount": "1 for garnish"}], "source": "sheet"}, {"name": "Whiskey Sour", "family": "Sour", "base": "Whiskey", "style": "Sour", "difficulty": "Easy", "glass": "Rocks", "tags": ["classic", "citrus"], "ingredients": [{"name": "Bourbon", "amount": "2 oz"}, {"name": "Lemon Juice", "amount": "3/4 oz"}, {"name": "Simple Syrup", "amount": "3/4 oz"}], "source": "sheet"}, {"name": "Boston Sour", "family": "Sour", "base": "Whiskey", "style": "Sour", "difficulty": "Medium", "glass": "Rocks", "tags": ["classic", "citrus", "foam"], "ingredients": [{"name": "Bourbon", "amount": "2 oz"}, {"name": "Lemon Juice", "amount": "3/4 oz"}, {"name": "Simple Syrup", "amount": "3/4 oz"}, {"name": "Egg White", "amount": "1"}], "source": "sheet"}, {"name": "Gold Rush", "family": "Sour", "base": "Whiskey", "style": "Sour", "difficulty": "Easy", "glass": "Rocks", "tags": ["modern", "citrus"], "ingredients": [{"name": "Bourbon", "amount": "2 oz"}, {"name": "Lemon Juice", "amount": "3/4 oz"}, {"name": "Honey Syrup", "amount": "3/4 oz"}], "source": "sheet"}, {"name": "Revolver", "family": "Modern Classic", "base": "Whiskey", "style": "Spirit-forward", "difficulty": "Easy", "glass": "Coupe", "tags": ["coffee", "whiskey"], "ingredients": [{"name": "Bourbon", "amount": "2 oz"}, {"name": "Coffee Liqueur", "amount": "1/2 oz"}, {"name": "Orange Bitters", "amount": "2 dashes"}], "source": "sheet"}, {"name": "Irish Coffee", "family": "Coffee", "base": "Irish Whiskey", "style": "Hot", "difficulty": "Medium", "glass": "Mug", "tags": ["coffee", "dessert"], "ingredients": [{"name": "Irish Whiskey", "amount": "1.5 oz"}, {"name": "Coffee", "amount": "4 oz"}, {"name": "Sugar", "amount": "1 tsp"}, {"name": "Cream", "amount": "1 oz floated"}], "source": "sheet"}, {"name": "Gin Martini", "family": "Martini", "base": "Gin", "style": "Spirit-forward", "difficulty": "Medium", "glass": "Coupe", "tags": ["classic", "gin"], "ingredients": [{"name": "Gin", "amount": "2.5 oz"}, {"name": "Dry Vermouth", "amount": "1/2 oz"}, {"name": "Orange Bitters", "amount": "1 dash"}], "source": "sheet"}, {"name": "Dry Martini", "family": "Martini", "base": "Gin", "style": "Spirit-forward", "difficulty": "Medium", "glass": "Coupe", "tags": ["classic", "gin"], "ingredients": [{"name": "Gin", "amount": "2.5 oz"}, {"name": "Dry Vermouth", "amount": "1/4 oz"}], "source": "sheet"}, {"name": "Gin & Tonic", "family": "Highball", "base": "Gin", "style": "Refreshing", "difficulty": "Easy", "glass": "Highball", "tags": ["patio", "low effort"], "ingredients": [{"name": "Gin", "amount": "2 oz"}, {"name": "Tonic Water", "amount": "4 oz"}], "source": "sheet"}, {"name": "Tom Collins", "family": "Collins", "base": "Gin", "style": "Refreshing", "difficulty": "Easy", "glass": "Collins", "tags": ["classic", "patio"], "ingredients": [{"name": "Gin", "amount": "2 oz"}, {"name": "Lemon Juice", "amount": "1 oz"}, {"name": "Simple Syrup", "amount": "1/2 oz"}, {"name": "Club Soda", "amount": "top with"}], "source": "sheet"}, {"name": "Gin Rickey", "family": "Highball", "base": "Gin", "style": "Refreshing", "difficulty": "Easy", "glass": "Highball", "tags": ["low calorie", "patio"], "ingredients": [{"name": "Gin", "amount": "2 oz"}, {"name": "Lime Juice", "amount": "1/2 oz"}, {"name": "Club Soda", "amount": "top with"}], "source": "sheet"}, {"name": "Southside", "family": "Sour", "base": "Gin", "style": "Refreshing", "difficulty": "Medium", "glass": "Coupe", "tags": ["mint", "summer"], "ingredients": [{"name": "Gin", "amount": "2 oz"}, {"name": "Lime Juice", "amount": "3/4 oz"}, {"name": "Simple Syrup", "amount": "3/4 oz"}, {"name": "Mint", "amount": "8 leaves"}], "source": "sheet"}, {"name": "Bee's Knees", "family": "Sour", "base": "Gin", "style": "Sour", "difficulty": "Easy", "glass": "Coupe", "tags": ["classic", "citrus"], "ingredients": [{"name": "Gin", "amount": "2 oz"}, {"name": "Lemon Juice", "amount": "3/4 oz"}, {"name": "Honey Syrup", "amount": "3/4 oz"}], "source": "sheet"}, {"name": "Lavender Gin Sour", "family": "Sour", "base": "Gin", "style": "Floral", "difficulty": "Easy", "glass": "Coupe", "tags": ["floral", "summer"], "ingredients": [{"name": "Gin", "amount": "2 oz"}, {"name": "Lemon Juice", "amount": "3/4 oz"}, {"name": "Lavender Hibiscus Syrup", "amount": "3/4 oz"}], "source": "sheet"}, {"name": "Strawberry Rhubarb Gin Fizz", "family": "Fizz", "base": "Gin", "style": "Refreshing", "difficulty": "Medium", "glass": "Collins", "tags": ["fruit", "patio"], "ingredients": [{"name": "Gin", "amount": "1.5 oz"}, {"name": "Strawberry Rhubarb Liqueur", "amount": "1/2 oz"}, {"name": "Lemon Juice", "amount": "3/4 oz"}, {"name": "Simple Syrup", "amount": "1/4 oz"}, {"name": "Club Soda", "amount": "top with"}], "source": "sheet"}, {"name": "Daiquiri", "family": "Sour", "base": "Rum", "style": "Sour", "difficulty": "Easy", "glass": "Coupe", "tags": ["classic", "rum"], "ingredients": [{"name": "White Rum", "amount": "2 oz"}, {"name": "Lime Juice", "amount": "3/4 oz"}, {"name": "Simple Syrup", "amount": "3/4 oz"}], "source": "sheet"}, {"name": "Rum Old Fashioned", "family": "Old Fashioned", "base": "Rum", "style": "Spirit-forward", "difficulty": "Easy", "glass": "Rocks", "tags": ["rum", "spirit-forward"], "ingredients": [{"name": "White Rum", "amount": "2 oz"}, {"name": "Simple Syrup", "amount": "1/4 oz"}, {"name": "Aromatic Bitters", "amount": "2 dashes"}], "source": "sheet"}, {"name": "Mojito", "family": "Highball", "base": "Rum", "style": "Refreshing", "difficulty": "Medium", "glass": "Highball", "tags": ["mint", "summer"], "ingredients": [{"name": "White Rum", "amount": "2 oz"}, {"name": "Lime Juice", "amount": "3/4 oz"}, {"name": "Simple Syrup", "amount": "3/4 oz"}, {"name": "Mint", "amount": "10 leaves"}, {"name": "Club Soda", "amount": "top with"}], "source": "sheet"}, {"name": "Corn 'n Oil", "family": "Tiki", "base": "Rum", "style": "Rich", "difficulty": "Easy", "glass": "Rocks", "tags": ["tiki", "spice"], "ingredients": [{"name": "White Rum", "amount": "2 oz"}, {"name": "Falernum", "amount": "1/2 oz"}, {"name": "Aromatic Bitters", "amount": "2 dashes"}, {"name": "Lime Juice", "amount": "1/4 oz"}], "source": "sheet"}, {"name": "Royal Bermuda Yacht Club", "family": "Tiki", "base": "Rum", "style": "Sour", "difficulty": "Medium", "glass": "Coupe", "tags": ["tiki", "classic"], "ingredients": [{"name": "White Rum", "amount": "2 oz"}, {"name": "Falernum", "amount": "1/2 oz"}, {"name": "Triple Sec", "amount": "1/4 oz"}, {"name": "Lime Juice", "amount": "3/4 oz"}], "source": "sheet"}, {"name": "Margarita", "family": "Sour", "base": "Tequila", "style": "Sour", "difficulty": "Easy", "glass": "Rocks", "tags": ["classic", "tequila"], "ingredients": [{"name": "Reposado Tequila", "amount": "2 oz"}, {"name": "Triple Sec", "amount": "1 oz"}, {"name": "Lime Juice", "amount": "1 oz"}, {"name": "Salt", "amount": "rim"}], "source": "sheet"}, {"name": "Tommy's Margarita", "family": "Sour", "base": "Tequila", "style": "Sour", "difficulty": "Easy", "glass": "Rocks", "tags": ["tequila", "patio"], "ingredients": [{"name": "Reposado Tequila", "amount": "2 oz"}, {"name": "Lime Juice", "amount": "1 oz"}, {"name": "Agave Syrup", "amount": "1/2 oz"}, {"name": "Salt", "amount": "rim"}], "source": "sheet"}, {"name": "Tequila Old Fashioned", "family": "Old Fashioned", "base": "Tequila", "style": "Spirit-forward", "difficulty": "Easy", "glass": "Rocks", "tags": ["tequila", "spirit-forward"], "ingredients": [{"name": "Añejo Tequila", "amount": "2 oz"}, {"name": "Simple Syrup", "amount": "1/4 oz"}, {"name": "Aromatic Bitters", "amount": "2 dashes"}], "source": "sheet"}, {"name": "Mexican Coffee", "family": "Coffee", "base": "Tequila", "style": "Dessert", "difficulty": "Easy", "glass": "Mug", "tags": ["coffee", "dessert"], "ingredients": [{"name": "Reposado Tequila", "amount": "1 oz"}, {"name": "Coffee Liqueur", "amount": "1/2 oz"}, {"name": "Coffee", "amount": "4 oz"}, {"name": "Cream", "amount": "1 oz floated"}], "source": "sheet"}, {"name": "Carajillo", "family": "Coffee", "base": "Licor 43", "style": "Dessert", "difficulty": "Easy", "glass": "Rocks", "tags": ["coffee", "dessert"], "ingredients": [{"name": "Licor 43", "amount": "1 oz"}, {"name": "Coffee", "amount": "1 oz"}], "source": "sheet"}, {"name": "White Russian-ish", "family": "Dessert", "base": "Vodka", "style": "Dessert", "difficulty": "Easy", "glass": "Rocks", "tags": ["coffee", "dessert"], "ingredients": [{"name": "Vanilla Vodka", "amount": "2 oz"}, {"name": "Coffee Liqueur", "amount": "1 oz"}, {"name": "Cream", "amount": "1/2 oz floated"}], "source": "sheet"}, {"name": "French 75", "family": "Sparkling", "base": "Gin", "style": "Refreshing", "difficulty": "Medium", "glass": "Flute", "tags": ["sparkling", "classic"], "ingredients": [{"name": "Gin", "amount": "1 oz"}, {"name": "Lemon Juice", "amount": "1/2 oz"}, {"name": "Simple Syrup", "amount": "1/2 oz"}, {"name": "Sparkling Wine", "amount": "top with"}], "source": "sheet"}, {"name": "Americano", "family": "Spritz", "base": "Campari", "style": "Low ABV", "difficulty": "Easy", "glass": "Highball", "tags": ["bitter", "patio"], "ingredients": [{"name": "Campari", "amount": "1 oz"}, {"name": "Sweet Vermouth", "amount": "1 oz"}, {"name": "Club Soda", "amount": "top with"}], "source": "sheet"}, {"name": "Negroni", "family": "Negroni", "base": "Gin", "style": "Bitter", "difficulty": "Easy", "glass": "Rocks", "tags": ["classic", "bitter"], "ingredients": [{"name": "Gin", "amount": "1 oz"}, {"name": "Sweet Vermouth", "amount": "1 oz"}, {"name": "Campari", "amount": "1 oz"}], "source": "sheet"}, {"name": "Boulevardier", "family": "Negroni", "base": "Whiskey", "style": "Bitter", "difficulty": "Easy", "glass": "Rocks", "tags": ["classic", "bitter"], "ingredients": [{"name": "Bourbon", "amount": "1.5 oz"}, {"name": "Sweet Vermouth", "amount": "1 oz"}, {"name": "Campari", "amount": "1 oz"}], "source": "sheet"}, {"name": "Old Pal", "family": "Negroni", "base": "Rye", "style": "Bitter", "difficulty": "Easy", "glass": "Coupe", "tags": ["classic", "bitter"], "ingredients": [{"name": "Rye Whiskey", "amount": "1 oz"}, {"name": "Dry Vermouth", "amount": "1 oz"}, {"name": "Campari", "amount": "1 oz"}], "source": "sheet"}, {"name": "Jungle Bird", "family": "Tiki", "base": "Rum", "style": "Bitter", "difficulty": "Medium", "glass": "Rocks", "tags": ["tiki", "bitter"], "ingredients": [{"name": "White Rum", "amount": "1.5 oz"}, {"name": "Campari", "amount": "3/4 oz"}, {"name": "Lime Juice", "amount": "1/2 oz"}, {"name": "Pineapple Juice", "amount": "1.5 oz"}, {"name": "Simple Syrup", "amount": "1/2 oz"}], "source": "sheet"}, {"name": "Paper Plane", "family": "Modern Classic", "base": "Bourbon", "style": "Bitter Sour", "difficulty": "Easy", "glass": "Coupe", "tags": ["modern", "amaro"], "ingredients": [{"name": "Bourbon", "amount": "3/4 oz"}, {"name": "Amaro Nonino", "amount": "3/4 oz"}, {"name": "Aperol", "amount": "3/4 oz"}, {"name": "Lemon Juice", "amount": "3/4 oz"}], "source": "sheet"}, {"name": "Aperol Spritz", "family": "Spritz", "base": "Aperol", "style": "Low ABV", "difficulty": "Easy", "glass": "Wine Glass", "tags": ["sparkling", "patio"], "ingredients": [{"name": "Aperol", "amount": "3 oz"}, {"name": "Sparkling Wine", "amount": "3 oz"}, {"name": "Club Soda", "amount": "splash"}], "source": "sheet"}, {"name": "Naked & Famous", "family": "Modern Classic", "base": "Mezcal", "style": "Bitter Sour", "difficulty": "Medium", "glass": "Coupe", "tags": ["modern", "smoky"], "ingredients": [{"name": "Mezcal", "amount": "3/4 oz"}, {"name": "Aperol", "amount": "3/4 oz"}, {"name": "Yellow Chartreuse", "amount": "3/4 oz"}, {"name": "Lime Juice", "amount": "3/4 oz"}], "source": "sheet"}, {"name": "Last Word", "family": "Classic", "base": "Gin", "style": "Herbal Sour", "difficulty": "Medium", "glass": "Coupe", "tags": ["classic", "herbal"], "ingredients": [{"name": "Gin", "amount": "3/4 oz"}, {"name": "Green Chartreuse", "amount": "3/4 oz"}, {"name": "Maraschino Liqueur", "amount": "3/4 oz"}, {"name": "Lime Juice", "amount": "3/4 oz"}], "source": "sheet"}, {"name": "Aviation", "family": "Classic", "base": "Gin", "style": "Floral Sour", "difficulty": "Medium", "glass": "Coupe", "tags": ["classic", "gin"], "ingredients": [{"name": "Gin", "amount": "2 oz"}, {"name": "Maraschino Liqueur", "amount": "1/2 oz"}, {"name": "Crème de Violette", "amount": "1/4 oz"}, {"name": "Lemon Juice", "amount": "3/4 oz"}], "source": "sheet"}, {"name": "Hemingway Daiquiri", "family": "Classic", "base": "Rum", "style": "Sour", "difficulty": "Medium", "glass": "Coupe", "tags": ["classic", "rum"], "ingredients": [{"name": "White Rum", "amount": "2 oz"}, {"name": "Maraschino Liqueur", "amount": "1/2 oz"}, {"name": "Grapefruit Juice", "amount": "3/4 oz"}, {"name": "Lime Juice", "amount": "1/2 oz"}], "source": "sheet"}, {"name": "Martinez", "family": "Classic", "base": "Gin", "style": "Spirit-forward", "difficulty": "Medium", "glass": "Coupe", "tags": ["classic", "gin"], "ingredients": [{"name": "Gin", "amount": "1.5 oz"}, {"name": "Sweet Vermouth", "amount": "1.5 oz"}, {"name": "Maraschino Liqueur", "amount": "1/4 oz"}, {"name": "Orange Bitters", "amount": "2 dashes"}], "source": "sheet"}, {"name": "Vieux Carré", "family": "Classic", "base": "Whiskey", "style": "Spirit-forward", "difficulty": "Hard", "glass": "Rocks", "tags": ["classic", "new orleans"], "ingredients": [{"name": "Rye Whiskey", "amount": "1 oz"}, {"name": "Cognac", "amount": "1 oz"}, {"name": "Sweet Vermouth", "amount": "1 oz"}, {"name": "Benedictine", "amount": "2 tsp"}, {"name": "Aromatic Bitters", "amount": "1 dash"}, {"name": "Orange Bitters", "amount": "1 dash"}], "source": "sheet"}, {"name": "Bobby Burns", "family": "Classic", "base": "Scotch", "style": "Spirit-forward", "difficulty": "Medium", "glass": "Coupe", "tags": ["classic", "scotch"], "ingredients": [{"name": "Scotch", "amount": "2 oz"}, {"name": "Sweet Vermouth", "amount": "1 oz"}, {"name": "Benedictine", "amount": "2 tsp"}], "source": "sheet"}, {"name": "Toronto", "family": "Classic", "base": "Rye", "style": "Spirit-forward", "difficulty": "Medium", "glass": "Rocks", "tags": ["classic", "bitter"], "ingredients": [{"name": "Rye Whiskey", "amount": "2 oz"}, {"name": "Fernet Branca", "amount": "1/4 oz"}, {"name": "Simple Syrup", "amount": "1/4 oz"}, {"name": "Aromatic Bitters", "amount": "2 dashes"}], "source": "sheet"}, {"name": "Godfather", "family": "Duo", "base": "Scotch", "style": "Spirit-forward", "difficulty": "Easy", "glass": "Rocks", "tags": ["two ingredient"], "ingredients": [{"name": "Scotch", "amount": "1.5 oz"}, {"name": "Amaretto", "amount": "1.5 oz"}], "source": "sheet"}, {"name": "Rusty Nail", "family": "Duo", "base": "Scotch", "style": "Spirit-forward", "difficulty": "Easy", "glass": "Rocks", "tags": ["two ingredient"], "ingredients": [{"name": "Scotch", "amount": "1.5 oz"}, {"name": "Drambuie", "amount": "3/4 oz"}], "source": "sheet"}, {"name": "Sidecar", "family": "Classic", "base": "Cognac", "style": "Sour", "difficulty": "Medium", "glass": "Coupe", "tags": ["classic"], "ingredients": [{"name": "Cognac", "amount": "2 oz"}, {"name": "Triple Sec", "amount": "3/4 oz"}, {"name": "Lemon Juice", "amount": "3/4 oz"}], "source": "sheet"}, {"name": "Cosmopolitan", "family": "Modern Classic", "base": "Vodka", "style": "Sour", "difficulty": "Medium", "glass": "Coupe", "tags": ["classic", "vodka"], "ingredients": [{"name": "Vodka", "amount": "1.5 oz"}, {"name": "Triple Sec", "amount": "1/2 oz"}, {"name": "Lime Juice", "amount": "1/2 oz"}, {"name": "Cranberry Juice", "amount": "1/2 oz"}], "source": "sheet"}, {"name": "Espresso Martini-ish", "family": "Modern Classic", "base": "Vodka", "style": "Dessert", "difficulty": "Medium", "glass": "Coupe", "tags": ["coffee", "dessert"], "ingredients": [{"name": "Vanilla Vodka", "amount": "1.5 oz"}, {"name": "Coffee Liqueur", "amount": "1/2 oz"}, {"name": "Coffee", "amount": "1 oz"}, {"name": "Simple Syrup", "amount": "1/4 oz"}], "source": "sheet"}, {"name": "Sazerac", "family": "Old Fashioned", "base": "Rye Whiskey", "style": "Spirit-forward", "difficulty": "Medium", "glass": "Rocks", "tags": ["classic", "whiskey", "new orleans"], "ingredients": [{"name": "Rye Whiskey", "amount": "2 oz"}, {"name": "Simple Syrup", "amount": "1/4 oz"}, {"name": "Peychaud's Bitters", "amount": "3 dashes"}, {"name": "Absinthe", "amount": "rinse"}], "source": "added"}, {"name": "New York Sour", "family": "Sour", "base": "Rye Whiskey", "style": "Citrus", "difficulty": "Medium", "glass": "Rocks", "tags": ["whiskey", "citrus", "wine float"], "ingredients": [{"name": "Rye Whiskey", "amount": "2 oz"}, {"name": "Lemon Juice", "amount": "3/4 oz"}, {"name": "Simple Syrup", "amount": "3/4 oz"}], "source": "added"}, {"name": "Whiskey Smash", "family": "Smash", "base": "Bourbon", "style": "Citrus / Herbal", "difficulty": "Easy", "glass": "Rocks", "tags": ["whiskey", "summer", "mint"], "ingredients": [{"name": "Bourbon", "amount": "2 oz"}, {"name": "Lemon Juice", "amount": "3/4 oz"}, {"name": "Simple Syrup", "amount": "1/2 oz"}, {"name": "Mint", "amount": "8 leaves"}], "source": "added"}, {"name": "Penicillin", "family": "Modern Classic", "base": "Scotch", "style": "Citrus / Spiced", "difficulty": "Medium", "glass": "Rocks", "tags": ["modern classic", "scotch", "ginger"], "ingredients": [{"name": "Scotch", "amount": "2 oz"}, {"name": "Lemon Juice", "amount": "3/4 oz"}, {"name": "Honey Syrup", "amount": "1/2 oz"}, {"name": "Ginger Syrup", "amount": "1/4 oz"}], "source": "added"}, {"name": "Presbyterian", "family": "Highball", "base": "Rye Whiskey", "style": "Tall / Refreshing", "difficulty": "Easy", "glass": "Highball", "tags": ["whiskey", "refreshing", "low effort"], "ingredients": [{"name": "Rye Whiskey", "amount": "2 oz"}, {"name": "Club Soda", "amount": "2 oz"}, {"name": "Ginger Ale", "amount": "2 oz"}], "source": "added"}, {"name": "Mint Julep", "family": "Smash", "base": "Bourbon", "style": "Herbal", "difficulty": "Easy", "glass": "Julep Tin", "tags": ["classic", "mint", "summer", "derby"], "ingredients": [{"name": "Bourbon", "amount": "2.5 oz"}, {"name": "Simple Syrup", "amount": "1/4 oz"}, {"name": "Mint", "amount": "8 leaves"}], "source": "added"}, {"name": "Algonquin", "family": "Stirred", "base": "Rye Whiskey", "style": "Fruit / Stirred", "difficulty": "Medium", "glass": "Coupe", "tags": ["whiskey", "citrus", "unusual"], "ingredients": [{"name": "Rye Whiskey", "amount": "1.5 oz"}, {"name": "Dry Vermouth", "amount": "3/4 oz"}, {"name": "Pineapple Juice", "amount": "3/4 oz"}], "source": "added"}, {"name": "Brooklyn", "family": "Manhattan", "base": "Rye Whiskey", "style": "Spirit-forward", "difficulty": "Medium", "glass": "Coupe", "tags": ["whiskey", "amaro", "classic"], "ingredients": [{"name": "Rye Whiskey", "amount": "2 oz"}, {"name": "Dry Vermouth", "amount": "3/4 oz"}, {"name": "Maraschino Liqueur", "amount": "1/4 oz"}, {"name": "Amaro Nonino", "amount": "1/4 oz"}], "source": "added"}, {"name": "Martini", "family": "Martini", "base": "Gin", "style": "Spirit-forward", "difficulty": "Easy", "glass": "Coupe", "tags": ["classic", "gin", "impress guests"], "ingredients": [{"name": "Gin", "amount": "2.5 oz"}, {"name": "Dry Vermouth", "amount": "1/2 oz"}, {"name": "Orange Bitters", "amount": "1 dash"}], "source": "added"}, {"name": "Dirty Martini", "family": "Martini", "base": "Gin", "style": "Spirit-forward", "difficulty": "Easy", "glass": "Coupe", "tags": ["gin", "savory"], "ingredients": [{"name": "Gin", "amount": "2.5 oz"}, {"name": "Dry Vermouth", "amount": "1/2 oz"}], "source": "added"}, {"name": "Gin Gimlet", "family": "Sour", "base": "Gin", "style": "Citrus", "difficulty": "Easy", "glass": "Coupe", "tags": ["gin", "summer", "low effort", "patio"], "ingredients": [{"name": "Gin", "amount": "2 oz"}, {"name": "Sweetened Lime Syrup", "amount": "3/4 oz"}], "source": "added"}, {"name": "Bramble", "family": "Sour", "base": "Gin", "style": "Fruit / Citrus", "difficulty": "Medium", "glass": "Rocks", "tags": ["gin", "fruit", "summer"], "ingredients": [{"name": "Gin", "amount": "2 oz"}, {"name": "Lemon Juice", "amount": "3/4 oz"}, {"name": "Simple Syrup", "amount": "1/4 oz"}, {"name": "Crème de Cassis", "amount": "1/2 oz drizzled"}], "source": "added"}, {"name": "Corpse Reviver #2", "family": "Sour", "base": "Gin", "style": "Citrus / Herbal", "difficulty": "Hard", "glass": "Coupe", "tags": ["classic", "brunch", "citrus"], "ingredients": [{"name": "Gin", "amount": "3/4 oz"}, {"name": "Triple Sec", "amount": "3/4 oz"}, {"name": "Lemon Juice", "amount": "3/4 oz"}, {"name": "Absinthe", "amount": "rinse"}], "source": "added"}, {"name": "Vesper", "family": "Martini", "base": "Gin", "style": "Spirit-forward", "difficulty": "Medium", "glass": "Coupe", "tags": ["gin", "vodka", "classic"], "ingredients": [{"name": "Gin", "amount": "2 oz"}, {"name": "Vodka", "amount": "1/2 oz"}, {"name": "Triple Sec", "amount": "1/4 oz"}], "source": "added"}, {"name": "Gin Fizz", "family": "Fizz", "base": "Gin", "style": "Citrus / Fizzy", "difficulty": "Medium", "glass": "Highball", "tags": ["gin", "brunch", "fizzy"], "ingredients": [{"name": "Gin", "amount": "2 oz"}, {"name": "Lemon Juice", "amount": "3/4 oz"}, {"name": "Simple Syrup", "amount": "3/4 oz"}, {"name": "Egg White", "amount": "1"}, {"name": "Club Soda", "amount": "top with"}], "source": "added"}, {"name": "White Lady", "family": "Sour", "base": "Gin", "style": "Citrus", "difficulty": "Medium", "glass": "Coupe", "tags": ["gin", "classic", "citrus"], "ingredients": [{"name": "Gin", "amount": "1.5 oz"}, {"name": "Triple Sec", "amount": "3/4 oz"}, {"name": "Lemon Juice", "amount": "3/4 oz"}], "source": "added"}, {"name": "Hanky Panky", "family": "Martini", "base": "Gin", "style": "Bitter / Stirred", "difficulty": "Medium", "glass": "Coupe", "tags": ["gin", "bitter", "unusual"], "ingredients": [{"name": "Gin", "amount": "1.5 oz"}, {"name": "Sweet Vermouth", "amount": "1.5 oz"}, {"name": "Fernet Branca", "amount": "2 dashes"}], "source": "added"}, {"name": "Lavender Hibiscus Gin Sour", "family": "Sour", "base": "Gin", "style": "Floral / Citrus", "difficulty": "Easy", "glass": "Coupe", "tags": ["original", "floral", "spring", "summer", "guest friendly"], "ingredients": [{"name": "Gin", "amount": "2 oz"}, {"name": "Lavender Hibiscus Syrup", "amount": "3/4 oz"}, {"name": "Lemon Juice", "amount": "3/4 oz"}], "source": "added"}, {"name": "Dark 'n' Stormy", "family": "Highball", "base": "Aged Rum", "style": "Tall / Spiced", "difficulty": "Easy", "glass": "Highball", "tags": ["rum", "ginger", "refreshing"], "ingredients": [{"name": "Aged Rum", "amount": "2 oz"}, {"name": "Ginger Beer", "amount": "4 oz"}, {"name": "Lime Juice", "amount": "1/4 oz"}], "source": "added"}, {"name": "Mai Tai", "family": "Tiki", "base": "Aged Rum", "style": "Tiki", "difficulty": "Medium", "glass": "Rocks", "tags": ["tiki", "rum", "classic", "patio"], "ingredients": [{"name": "Aged Rum", "amount": "1 oz"}, {"name": "White Rum", "amount": "1 oz"}, {"name": "Orange Curaçao", "amount": "1/2 oz"}, {"name": "Orgeat", "amount": "1/2 oz"}, {"name": "Lime Juice", "amount": "1 oz"}], "source": "added"}, {"name": "Painkiller", "family": "Tiki", "base": "Aged Rum", "style": "Tiki / Tropical", "difficulty": "Easy", "glass": "Rocks", "tags": ["tiki", "rum", "tropical", "patio"], "ingredients": [{"name": "Aged Rum", "amount": "2 oz"}, {"name": "Pineapple Juice", "amount": "4 oz"}, {"name": "Orange Juice", "amount": "1 oz"}, {"name": "Coconut Cream", "amount": "1 oz"}], "source": "added"}, {"name": "Piña Colada", "family": "Tiki", "base": "White Rum", "style": "Tropical / Creamy", "difficulty": "Easy", "glass": "Hurricane", "tags": ["tiki", "tropical", "dessert", "patio"], "ingredients": [{"name": "White Rum", "amount": "2 oz"}, {"name": "Pineapple Juice", "amount": "3 oz"}, {"name": "Coconut Cream", "amount": "1.5 oz"}], "source": "added"}, {"name": "Hurricane", "family": "Tiki", "base": "Aged Rum", "style": "Tiki / Fruit", "difficulty": "Medium", "glass": "Hurricane", "tags": ["tiki", "rum", "party"], "ingredients": [{"name": "Aged Rum", "amount": "1 oz"}, {"name": "White Rum", "amount": "1 oz"}, {"name": "Passion Fruit Syrup", "amount": "1 oz"}, {"name": "Lime Juice", "amount": "1/2 oz"}, {"name": "Orange Juice", "amount": "1/2 oz"}, {"name": "Grenadine", "amount": "1/2 oz"}], "source": "added"}, {"name": "Corn 'n' Oil", "family": "Tiki", "base": "Aged Rum", "style": "Tiki", "difficulty": "Medium", "glass": "Rocks", "tags": ["tiki", "rum", "patio"], "ingredients": [{"name": "Aged Rum", "amount": "2 oz"}, {"name": "Falernum", "amount": "1/2 oz"}, {"name": "Aromatic Bitters", "amount": "2 dashes"}, {"name": "Lime Juice", "amount": "1/4 oz"}], "source": "added"}, {"name": "El Presidente", "family": "Stirred", "base": "White Rum", "style": "Stirred", "difficulty": "Medium", "glass": "Coupe", "tags": ["rum", "classic", "impress guests"], "ingredients": [{"name": "White Rum", "amount": "1.5 oz"}, {"name": "Dry Vermouth", "amount": "3/4 oz"}, {"name": "Triple Sec", "amount": "1/4 oz"}, {"name": "Grenadine", "amount": "1 tsp"}], "source": "added"}, {"name": "Rum Punch", "family": "Punch", "base": "Aged Rum", "style": "Fruit / Tall", "difficulty": "Easy", "glass": "Highball", "tags": ["rum", "party", "tropical"], "ingredients": [{"name": "Aged Rum", "amount": "2 oz"}, {"name": "Orange Juice", "amount": "1 oz"}, {"name": "Pineapple Juice", "amount": "1 oz"}, {"name": "Grenadine", "amount": "1/2 oz"}, {"name": "Lime Juice", "amount": "1/2 oz"}], "source": "added"}, {"name": "Paloma", "family": "Highball", "base": "Reposado Tequila", "style": "Tall / Refreshing", "difficulty": "Easy", "glass": "Highball", "tags": ["tequila", "refreshing", "summer", "patio"], "ingredients": [{"name": "Reposado Tequila", "amount": "2 oz"}, {"name": "Grapefruit Juice", "amount": "3 oz"}, {"name": "Club Soda", "amount": "top with"}], "source": "added"}, {"name": "Oaxaca Old Fashioned", "family": "Old Fashioned", "base": "Reposado Tequila", "style": "Spirit-forward / Smoky", "difficulty": "Medium", "glass": "Rocks", "tags": ["tequila", "smoky", "modern classic"], "ingredients": [{"name": "Reposado Tequila", "amount": "1.5 oz"}, {"name": "Mezcal", "amount": "1/2 oz"}, {"name": "Agave Syrup", "amount": "1/4 oz"}, {"name": "Aromatic Bitters", "amount": "2 dashes"}], "source": "added"}, {"name": "Naked and Famous", "family": "Sour", "base": "Mezcal", "style": "Bitter / Citrus", "difficulty": "Medium", "glass": "Coupe", "tags": ["mezcal", "modern classic", "bitter"], "ingredients": [{"name": "Mezcal", "amount": "3/4 oz"}, {"name": "Aperol", "amount": "3/4 oz"}, {"name": "Yellow Chartreuse", "amount": "3/4 oz"}, {"name": "Lime Juice", "amount": "3/4 oz"}], "source": "added"}, {"name": "Mezcal Negroni", "family": "Bitter / Stirred", "base": "Mezcal", "style": "Bitter / Stirred", "difficulty": "Easy", "glass": "Rocks", "tags": ["mezcal", "bitter", "smoky"], "ingredients": [{"name": "Mezcal", "amount": "1 oz"}, {"name": "Sweet Vermouth", "amount": "1 oz"}, {"name": "Campari", "amount": "1 oz"}], "source": "added"}, {"name": "Tequila Sunrise", "family": "Highball", "base": "Reposado Tequila", "style": "Fruit / Tall", "difficulty": "Easy", "glass": "Highball", "tags": ["tequila", "brunch", "fruity"], "ingredients": [{"name": "Reposado Tequila", "amount": "2 oz"}, {"name": "Orange Juice", "amount": "4 oz"}, {"name": "Grenadine", "amount": "1/2 oz"}], "source": "added"}, {"name": "Mexican Mule", "family": "Highball", "base": "Reposado Tequila", "style": "Tall / Spiced", "difficulty": "Easy", "glass": "Highball", "tags": ["tequila", "ginger", "refreshing"], "ingredients": [{"name": "Reposado Tequila", "amount": "2 oz"}, {"name": "Lime Juice", "amount": "1/2 oz"}, {"name": "Ginger Beer", "amount": "4 oz"}], "source": "added"}, {"name": "Vodka Martini", "family": "Martini", "base": "Vodka", "style": "Spirit-forward", "difficulty": "Easy", "glass": "Coupe", "tags": ["vodka", "classic"], "ingredients": [{"name": "Vodka", "amount": "2.5 oz"}, {"name": "Dry Vermouth", "amount": "1/2 oz"}, {"name": "Orange Bitters", "amount": "1 dash"}], "source": "added"}, {"name": "Moscow Mule", "family": "Highball", "base": "Vodka", "style": "Tall / Spiced", "difficulty": "Easy", "glass": "Copper Mug", "tags": ["vodka", "ginger", "refreshing", "party"], "ingredients": [{"name": "Vodka", "amount": "2 oz"}, {"name": "Lime Juice", "amount": "1/2 oz"}, {"name": "Ginger Beer", "amount": "4 oz"}], "source": "added"}, {"name": "Espresso Martini", "family": "Coffee", "base": "Vanilla Vodka", "style": "Coffee / Dessert", "difficulty": "Easy", "glass": "Coupe", "tags": ["dessert", "coffee", "party"], "ingredients": [{"name": "Vanilla Vodka", "amount": "1.5 oz"}, {"name": "Coffee Liqueur", "amount": "1/2 oz"}, {"name": "Coffee", "amount": "1 oz"}], "source": "added"}, {"name": "White Russian", "family": "Coffee", "base": "Vodka", "style": "Dessert / Creamy", "difficulty": "Easy", "glass": "Rocks", "tags": ["dessert", "coffee", "creamy"], "ingredients": [{"name": "Vodka", "amount": "2 oz"}, {"name": "Coffee Liqueur", "amount": "1 oz"}, {"name": "Cream", "amount": "1/2 oz floated"}], "source": "added"}, {"name": "Bloody Mary", "family": "Savory", "base": "Vodka", "style": "Savory / Brunch", "difficulty": "Medium", "glass": "Highball", "tags": ["brunch", "savory", "hangover cure"], "ingredients": [{"name": "Vodka", "amount": "1.5 oz"}, {"name": "Tomato Juice", "amount": "4 oz"}, {"name": "Lemon Juice", "amount": "1/2 oz"}, {"name": "Salt", "amount": "pinch"}], "source": "added"}, {"name": "Greyhound", "family": "Highball", "base": "Vodka", "style": "Citrus / Tall", "difficulty": "Easy", "glass": "Highball", "tags": ["vodka", "citrus", "low effort"], "ingredients": [{"name": "Vodka", "amount": "2 oz"}, {"name": "Grapefruit Juice", "amount": "4 oz"}], "source": "added"}, {"name": "Cynar Spritz", "family": "Bitter / Fizzy", "base": "Fernet Branca", "style": "Bitter / Bubbly", "difficulty": "Easy", "glass": "Wine Glass", "tags": ["aperitivo", "bitter", "low abv"], "ingredients": [{"name": "Fernet Branca", "amount": "2 oz"}, {"name": "Sparkling Wine", "amount": "3 oz"}, {"name": "Club Soda", "amount": "splash"}], "source": "added"}, {"name": "Black Manhattan", "family": "Manhattan", "base": "Rye Whiskey", "style": "Bitter / Stirred", "difficulty": "Medium", "glass": "Coupe", "tags": ["whiskey", "amaro", "bitter"], "ingredients": [{"name": "Rye Whiskey", "amount": "2 oz"}, {"name": "Amaro Nonino", "amount": "1 oz"}, {"name": "Aromatic Bitters", "amount": "2 dashes"}], "source": "added"}, {"name": "Nonino Manhattan", "family": "Manhattan", "base": "Whiskey", "style": "Stirred", "difficulty": "Medium", "glass": "Coupe", "tags": ["whiskey", "amaro", "bitter", "impress guests"], "ingredients": [{"name": "Rye Whiskey", "amount": "2 oz"}, {"name": "Amaro Nonino", "amount": "3/4 oz"}, {"name": "Sweet Vermouth", "amount": "3/4 oz"}], "source": "added"}, {"name": "Grasshopper", "family": "Dessert", "base": "Crème de Menthe", "style": "Dessert / Creamy", "difficulty": "Easy", "glass": "Coupe", "tags": ["dessert", "mint", "creamy"], "ingredients": [{"name": "Crème de Menthe", "amount": "1 oz"}, {"name": "Cream", "amount": "1 oz"}], "source": "added"}, {"name": "Peppermint Patty", "family": "Dessert", "base": "Peppermint Schnapps", "style": "Dessert / Creamy", "difficulty": "Easy", "glass": "Rocks", "tags": ["dessert", "mint", "holiday"], "ingredients": [{"name": "Peppermint Schnapps", "amount": "1 oz"}, {"name": "Coffee Liqueur", "amount": "1 oz"}, {"name": "Cream", "amount": "1 oz"}], "source": "added"}, {"name": "Mudslide", "family": "Dessert", "base": "Vodka", "style": "Dessert / Creamy", "difficulty": "Easy", "glass": "Rocks", "tags": ["dessert", "coffee", "creamy", "party"], "ingredients": [{"name": "Vodka", "amount": "1 oz"}, {"name": "Coffee Liqueur", "amount": "1 oz"}, {"name": "Cream", "amount": "1 oz"}], "source": "added"}, {"name": "Smoked Maple Old Fashioned", "family": "Old Fashioned", "base": "Bourbon", "style": "Spirit-forward", "difficulty": "Easy", "glass": "Rocks", "tags": ["original", "whiskey", "fall", "winter", "low effort"], "ingredients": [{"name": "Bourbon", "amount": "2 oz"}, {"name": "Smoked Maple Syrup", "amount": "1/4 oz"}, {"name": "Aromatic Bitters", "amount": "2 dashes"}], "source": "added"}, {"name": "Rum and Coke", "family": "Highball", "base": "White Rum", "style": "Tall / Easy", "difficulty": "Easy", "glass": "Highball", "tags": ["low effort", "party", "rum"], "ingredients": [{"name": "White Rum", "amount": "2 oz"}, {"name": "Cola", "amount": "top with"}], "source": "added"}, {"name": "Whiskey Highball", "family": "Highball", "base": "Scotch", "style": "Tall / Easy", "difficulty": "Easy", "glass": "Highball", "tags": ["low effort", "whiskey", "refreshing"], "ingredients": [{"name": "Scotch", "amount": "2 oz"}, {"name": "Club Soda", "amount": "top with"}], "source": "added"}, {"name": "Gin and Tonic", "family": "Highball", "base": "Gin", "style": "Tall / Refreshing", "difficulty": "Easy", "glass": "Highball", "tags": ["classic", "gin", "low effort", "patio"], "ingredients": [{"name": "Gin", "amount": "2 oz"}, {"name": "Tonic Water", "amount": "top with"}], "source": "added"}, {"name": "Dark Rum and Ginger", "family": "Highball", "base": "Aged Rum", "style": "Tall / Spiced", "difficulty": "Easy", "glass": "Highball", "tags": ["low effort", "rum", "ginger"], "ingredients": [{"name": "Aged Rum", "amount": "2 oz"}, {"name": "Ginger Ale", "amount": "top with"}], "source": "added"}, {"name": "Bamboo", "family": "Fortified", "base": "Dry Vermouth", "style": "Low ABV / Stirred", "difficulty": "Easy", "glass": "Coupe", "tags": ["low abv", "vermouth", "low effort"], "ingredients": [{"name": "Dry Vermouth", "amount": "1.5 oz"}, {"name": "Sweet Vermouth", "amount": "1.5 oz"}, {"name": "Orange Bitters", "amount": "2 dashes"}], "source": "added"}, {"name": "Adonis", "family": "Fortified", "base": "Sweet Vermouth", "style": "Low ABV / Stirred", "difficulty": "Easy", "glass": "Coupe", "tags": ["low abv", "vermouth", "brunch"], "ingredients": [{"name": "Sweet Vermouth", "amount": "1.5 oz"}, {"name": "Dry Vermouth", "amount": "1.5 oz"}, {"name": "Orange Bitters", "amount": "2 dashes"}], "source": "added"}, {"name": "Brandy Old Fashioned", "family": "Old Fashioned", "base": "Cognac", "style": "Spirit-forward", "difficulty": "Easy", "glass": "Rocks", "tags": ["brandy", "spirit-forward"], "ingredients": [{"name": "Cognac", "amount": "2 oz"}, {"name": "Simple Syrup", "amount": "1/4 oz"}, {"name": "Aromatic Bitters", "amount": "2 dashes"}], "source": "added"}, {"name": "French Connection", "family": "Spirit-forward", "base": "Cognac", "style": "Spirit-forward / Sweet", "difficulty": "Easy", "glass": "Rocks", "tags": ["brandy", "low effort", "dessert"], "ingredients": [{"name": "Cognac", "amount": "1.5 oz"}, {"name": "Amaretto", "amount": "3/4 oz"}], "source": "added"}, {"name": "Negroni Sbagliato", "family": "Negroni", "base": "Campari", "style": "Bitter / Bubbly", "difficulty": "Easy", "glass": "Rocks", "tags": ["viral", "bitter", "bubbly", "trending"], "ingredients": [{"name": "Campari", "amount": "1 oz"}, {"name": "Sweet Vermouth", "amount": "1 oz"}, {"name": "Sparkling Wine", "amount": "1.5 oz"}], "source": "added2"}, {"name": "Coffee Negroni", "family": "Negroni", "base": "Gin", "style": "Bitter / Coffee", "difficulty": "Easy", "glass": "Rocks", "tags": ["coffee", "bitter", "modern classic"], "ingredients": [{"name": "Gin", "amount": "1 oz"}, {"name": "Campari", "amount": "3/4 oz"}, {"name": "Sweet Vermouth", "amount": "3/4 oz"}, {"name": "Coffee", "amount": "1/2 oz"}], "source": "added2"}, {"name": "White Negroni", "family": "Negroni", "base": "Gin", "style": "Bitter / Stirred", "difficulty": "Medium", "glass": "Rocks", "tags": ["bitter", "modern classic"], "ingredients": [{"name": "Gin", "amount": "1.5 oz"}, {"name": "Suze", "amount": "3/4 oz"}, {"name": "Dry Vermouth", "amount": "3/4 oz"}], "source": "added2"}, {"name": "Kentucky Mule", "family": "Mule", "base": "Bourbon", "style": "Tall / Spiced", "difficulty": "Easy", "glass": "Copper Mug", "tags": ["whiskey", "ginger", "refreshing"], "ingredients": [{"name": "Bourbon", "amount": "2 oz"}, {"name": "Lime Juice", "amount": "1/2 oz"}, {"name": "Ginger Beer", "amount": "4 oz"}], "source": "added2"}, {"name": "Amaretto Sour", "family": "Sour", "base": "Amaretto", "style": "Citrus", "difficulty": "Easy", "glass": "Rocks", "tags": ["sour", "dessert", "trending"], "ingredients": [{"name": "Amaretto", "amount": "2 oz"}, {"name": "Lemon Juice", "amount": "3/4 oz"}, {"name": "Simple Syrup", "amount": "1/2 oz"}, {"name": "Egg White", "amount": "1"}], "source": "added2"}, {"name": "Pornstar Martini", "family": "Martini", "base": "Vanilla Vodka", "style": "Fruity / Bubbly", "difficulty": "Medium", "glass": "Coupe", "tags": ["trending", "fruity", "party"], "ingredients": [{"name": "Vanilla Vodka", "amount": "1.5 oz"}, {"name": "Passion Fruit Syrup", "amount": "3/4 oz"}, {"name": "Lime Juice", "amount": "1/4 oz"}, {"name": "Sparkling Wine", "amount": "2 oz side"}], "source": "added2"}, {"name": "Clover Club", "family": "Sour", "base": "Gin", "style": "Fruity / Citrus", "difficulty": "Medium", "glass": "Coupe", "tags": ["classic", "fruity"], "ingredients": [{"name": "Gin", "amount": "1.5 oz"}, {"name": "Lemon Juice", "amount": "3/4 oz"}, {"name": "Raspberry Syrup", "amount": "1/2 oz"}, {"name": "Egg White", "amount": "1"}], "source": "added2"}, {"name": "Trinidad Sour", "family": "Sour", "base": "Aromatic Bitters", "style": "Unusual / Bitters-forward", "difficulty": "Medium", "glass": "Coupe", "tags": ["unusual", "bitters-forward", "modern classic"], "ingredients": [{"name": "Aromatic Bitters", "amount": "1.5 oz"}, {"name": "Orgeat", "amount": "1 oz"}, {"name": "Lemon Juice", "amount": "3/4 oz"}, {"name": "Rye Whiskey", "amount": "1/2 oz"}], "source": "added2"}, {"name": "Brown Derby", "family": "Sour", "base": "Bourbon", "style": "Citrus", "difficulty": "Easy", "glass": "Rocks", "tags": ["whiskey", "citrus"], "ingredients": [{"name": "Bourbon", "amount": "2 oz"}, {"name": "Grapefruit Juice", "amount": "3/4 oz"}, {"name": "Honey Syrup", "amount": "1/2 oz"}], "source": "added2"}, {"name": "Between the Sheets", "family": "Sour", "base": "Cognac", "style": "Citrus / Strong", "difficulty": "Medium", "glass": "Coupe", "tags": ["classic", "strong"], "ingredients": [{"name": "Cognac", "amount": "3/4 oz"}, {"name": "White Rum", "amount": "3/4 oz"}, {"name": "Triple Sec", "amount": "3/4 oz"}, {"name": "Lemon Juice", "amount": "3/4 oz"}], "source": "added2"}, {"name": "Suffering Bastard", "family": "Tiki", "base": "Gin", "style": "Tiki / Strong", "difficulty": "Medium", "glass": "Highball", "tags": ["tiki", "strong"], "ingredients": [{"name": "Gin", "amount": "1 oz"}, {"name": "Cognac", "amount": "1 oz"}, {"name": "Lime Juice", "amount": "1/2 oz"}, {"name": "Ginger Beer", "amount": "3 oz"}, {"name": "Aromatic Bitters", "amount": "2 dashes"}], "source": "added2"}, {"name": "French Martini", "family": "Martini", "base": "Vodka", "style": "Fruity", "difficulty": "Easy", "glass": "Coupe", "tags": ["fruity", "party"], "ingredients": [{"name": "Vodka", "amount": "1.5 oz"}, {"name": "Chambord", "amount": "1/2 oz"}, {"name": "Pineapple Juice", "amount": "1 oz"}], "source": "added2"}, {"name": "Kamikaze", "family": "Shooter", "base": "Vodka", "style": "Citrus / Shot", "difficulty": "Easy", "glass": "Shot", "tags": ["shot", "party", "low effort"], "ingredients": [{"name": "Vodka", "amount": "1 oz"}, {"name": "Triple Sec", "amount": "1 oz"}, {"name": "Lime Juice", "amount": "1 oz"}], "source": "added2"}, {"name": "Sex on the Beach", "family": "Highball", "base": "Vodka", "style": "Fruity / Tall", "difficulty": "Easy", "glass": "Highball", "tags": ["fruity", "party"], "ingredients": [{"name": "Vodka", "amount": "1.5 oz"}, {"name": "Peach Schnapps", "amount": "1/2 oz"}, {"name": "Orange Juice", "amount": "2 oz"}, {"name": "Cranberry Juice", "amount": "2 oz"}], "source": "added2"}, {"name": "Long Island Iced Tea", "family": "Highball", "base": "Vodka", "style": "Strong / Tall", "difficulty": "Medium", "glass": "Highball", "tags": ["strong", "party", "classic"], "ingredients": [{"name": "Vodka", "amount": "1/2 oz"}, {"name": "Gin", "amount": "1/2 oz"}, {"name": "White Rum", "amount": "1/2 oz"}, {"name": "Reposado Tequila", "amount": "1/2 oz"}, {"name": "Triple Sec", "amount": "1/2 oz"}, {"name": "Lemon Juice", "amount": "3/4 oz"}, {"name": "Cola", "amount": "top with"}], "source": "added2"}, {"name": "Spicy Margarita", "family": "Sour", "base": "Reposado Tequila", "style": "Citrus / Spicy", "difficulty": "Easy", "glass": "Rocks", "tags": ["tequila", "spicy", "trending"], "ingredients": [{"name": "Reposado Tequila", "amount": "2 oz"}, {"name": "Lime Juice", "amount": "1 oz"}, {"name": "Agave Syrup", "amount": "1/2 oz"}, {"name": "Jalapeño", "amount": "2 slices"}], "source": "added2"}, {"name": "Ranch Water", "family": "Highball", "base": "Reposado Tequila", "style": "Tall / Refreshing", "difficulty": "Easy", "glass": "Highball", "tags": ["tequila", "refreshing", "trending", "low effort"], "ingredients": [{"name": "Reposado Tequila", "amount": "2 oz"}, {"name": "Lime Juice", "amount": "1/2 oz"}, {"name": "Club Soda", "amount": "top with"}], "source": "added2"}, {"name": "Basil Gimlet", "family": "Sour", "base": "Gin", "style": "Herbal / Citrus", "difficulty": "Easy", "glass": "Coupe", "tags": ["gin", "herbal", "summer"], "ingredients": [{"name": "Gin", "amount": "2 oz"}, {"name": "Lime Juice", "amount": "3/4 oz"}, {"name": "Simple Syrup", "amount": "1/2 oz"}, {"name": "Basil", "amount": "6 leaves"}], "source": "added2"}, {"name": "Cucumber Gimlet", "family": "Sour", "base": "Gin", "style": "Refreshing / Citrus", "difficulty": "Easy", "glass": "Coupe", "tags": ["gin", "refreshing", "summer"], "ingredients": [{"name": "Gin", "amount": "2 oz"}, {"name": "Lime Juice", "amount": "3/4 oz"}, {"name": "Simple Syrup", "amount": "1/2 oz"}, {"name": "Cucumber", "amount": "3 slices"}], "source": "added2"}, {"name": "Irish Mule", "family": "Mule", "base": "Irish Whiskey", "style": "Tall / Spiced", "difficulty": "Easy", "glass": "Copper Mug", "tags": ["whiskey", "ginger", "refreshing"], "ingredients": [{"name": "Irish Whiskey", "amount": "2 oz"}, {"name": "Lime Juice", "amount": "1/2 oz"}, {"name": "Ginger Beer", "amount": "4 oz"}], "source": "added2"}]};
+const SNAPSHOT = {"inventory": [{"Ingredient": "Woodford Reserve Double Oaked", "Canonical": "Bourbon", "Category": "Whiskey", "Brand": "Woodford Reserve", "In Stock": "Yes", "Low": null}, {"Ingredient": "Heaven Hill Bottled-in-Bond", "Canonical": "Bourbon", "Category": "Whiskey", "Brand": "Heaven Hill", "In Stock": "Yes", "Low": null}, {"Ingredient": "Moonrise Distillers Select Bourbon", "Canonical": "Bourbon", "Category": "Whiskey", "Brand": "Moonrise", "In Stock": "Yes", "Low": null}, {"Ingredient": "Moonrise Single Barrel Rye", "Canonical": "Rye Whiskey", "Category": "Whiskey", "Brand": "Moonrise", "In Stock": "Yes", "Low": null}, {"Ingredient": "Widow Jane Rye Mash Apple Wood Aged", "Canonical": "American Whiskey", "Category": "Whiskey", "Brand": "Widow Jane", "In Stock": "Yes", "Low": null}, {"Ingredient": "Kirkland 12 Year Blended Scotch", "Canonical": "Scotch", "Category": "Whiskey", "Brand": "Kirkland Signature", "In Stock": "Yes", "Low": null}, {"Ingredient": "Glenfiddich Bourbon Barrel Reserve", "Canonical": "Scotch", "Category": "Whiskey", "Brand": "Glenfiddich", "In Stock": "Yes", "Low": null}, {"Ingredient": "Redbreast 12", "Canonical": "Irish Whiskey", "Category": "Whiskey", "Brand": "Redbreast", "In Stock": "Yes", "Low": null}, {"Ingredient": "Tanqueray London Dry Gin", "Canonical": "Gin", "Category": "Gin", "Brand": "Tanqueray", "In Stock": "Yes", "Low": null}, {"Ingredient": "Tanqueray Rangpur Gin", "Canonical": "Gin", "Category": "Gin", "Brand": "Tanqueray", "In Stock": "Yes", "Low": null}, {"Ingredient": "Kirkland Tequila Reposado", "Canonical": "Reposado Tequila", "Category": "Tequila", "Brand": "Kirkland", "In Stock": "Yes", "Low": null}, {"Ingredient": "Teremana Reposado", "Canonical": "Reposado Tequila", "Category": "Tequila", "Brand": "Teremana", "In Stock": "Yes", "Low": "Yes"}, {"Ingredient": "Don Julio Añejo", "Canonical": "Añejo Tequila", "Category": "Tequila", "Brand": "Don Julio", "In Stock": "Yes", "Low": null}, {"Ingredient": "San Matías Gran Reserva Extra Añejo", "Canonical": "Extra Añejo Tequila", "Category": "Tequila", "Brand": "San Matías", "In Stock": "Yes", "Low": null}, {"Ingredient": "Bacardí Superior", "Canonical": "White Rum", "Category": "Rum", "Brand": "Bacardí", "In Stock": "Yes", "Low": null}, {"Ingredient": "Bacardí Light Rum", "Canonical": "White Rum", "Category": "Rum", "Brand": "Bacardí", "In Stock": "Yes", "Low": null}, {"Ingredient": "Smirnoff Vanilla Vodka", "Canonical": "Vanilla Vodka", "Category": "Vodka", "Brand": "Smirnoff", "In Stock": "Yes", "Low": null}, {"Ingredient": "Carpano Antica Formula", "Canonical": "Sweet Vermouth", "Category": "Fortified Wine", "Brand": "Carpano", "In Stock": "Yes", "Low": null}, {"Ingredient": "Dolin Dry Vermouth", "Canonical": "Dry Vermouth", "Category": "Fortified Wine", "Brand": "Dolin", "In Stock": "Yes", "Low": null}, {"Ingredient": "Amaro Nonino Quintessentia", "Canonical": "Amaro Nonino", "Category": "Amaro", "Brand": "Nonino", "In Stock": "Yes", "Low": null}, {"Ingredient": "Mr. Stacks Triple Sec", "Canonical": "Triple Sec", "Category": "Liqueur", "Brand": "Mr. Stacks", "In Stock": "Yes", "Low": null}, {"Ingredient": "Copa de Oro Coffee Liqueur", "Canonical": "Coffee Liqueur", "Category": "Liqueur", "Brand": "Copa de Oro", "In Stock": "Yes", "Low": null}, {"Ingredient": "Licor 43", "Canonical": "Licor 43", "Category": "Liqueur", "Brand": "Licor 43", "In Stock": "Yes", "Low": null}, {"Ingredient": "John D. Taylor Velvet Falernum", "Canonical": "Falernum", "Category": "Liqueur", "Brand": "John D. Taylor", "In Stock": "Yes", "Low": null}, {"Ingredient": "Wild Grove Kitchen Strawberry & Rhubarb", "Canonical": "Strawberry Rhubarb Liqueur", "Category": "Liqueur", "Brand": "Wild Grove Kitchen", "In Stock": "Yes", "Low": null}, {"Ingredient": "DeKuyper Peppermint Schnapps", "Canonical": "Peppermint Schnapps", "Category": "Liqueur", "Brand": "DeKuyper", "In Stock": "Yes", "Low": null}, {"Ingredient": "Angostura Aromatic Bitters", "Canonical": "Aromatic Bitters", "Category": "Bitters", "Brand": "Angostura", "In Stock": "Yes", "Low": null}, {"Ingredient": "Angostura Orange Bitters", "Canonical": "Orange Bitters", "Category": "Bitters", "Brand": "Angostura", "In Stock": "Yes", "Low": null}, {"Ingredient": "Fee Brothers Black Walnut Bitters", "Canonical": "Black Walnut Bitters", "Category": "Bitters", "Brand": "Fee Brothers", "In Stock": "Yes", "Low": null}, {"Ingredient": "Bettergoods Simple Syrup", "Canonical": "Simple Syrup", "Category": "Syrup", "Brand": "Bettergoods", "In Stock": "Yes", "Low": null}, {"Ingredient": "Bettergoods Sweetened Lime Syrup", "Canonical": "Sweetened Lime Syrup", "Category": "Syrup", "Brand": "Bettergoods", "In Stock": "Yes", "Low": null}, {"Ingredient": "Tryon Mountain Farms Lavender Hibiscus Syrup", "Canonical": "Lavender Hibiscus Syrup", "Category": "Syrup", "Brand": "Tryon Mountain Farms", "In Stock": "Yes", "Low": null}, {"Ingredient": "Runamok Smoked Old Fashioned Maple Syrup", "Canonical": "Smoked Maple Syrup", "Category": "Syrup", "Brand": "Runamok", "In Stock": "Yes", "Low": null}, {"Ingredient": "Traverse City Premium Cocktail Cherries", "Canonical": "Cocktail Cherries", "Category": "Garnish", "Brand": "Traverse City Whiskey Co.", "In Stock": "Yes", "Low": null}], "pantry": [{"Item": "Lemons", "Canonical": "Lemon Juice", "Category": "Fresh", "In Stock": "No"}, {"Item": "Limes", "Canonical": "Lime Juice", "Category": "Fresh", "In Stock": "No"}, {"Item": "Oranges", "Canonical": "Orange Juice", "Category": "Fresh", "In Stock": "No"}, {"Item": "Grapefruit", "Canonical": "Grapefruit Juice", "Category": "Fresh", "In Stock": "No"}, {"Item": "Mint", "Canonical": "Mint", "Category": "Fresh", "In Stock": "No"}, {"Item": "Eggs", "Canonical": "Egg White", "Category": "Fresh", "In Stock": "No"}, {"Item": "Cream", "Canonical": "Cream", "Category": "Fresh", "In Stock": "No"}, {"Item": "Club Soda", "Canonical": "Club Soda", "Category": "Mixer", "In Stock": "No"}, {"Item": "Tonic Water", "Canonical": "Tonic Water", "Category": "Mixer", "In Stock": "No"}, {"Item": "Ginger Beer", "Canonical": "Ginger Beer", "Category": "Mixer", "In Stock": "No"}, {"Item": "Cola", "Canonical": "Cola", "Category": "Mixer", "In Stock": "No"}, {"Item": "Sparkling Wine", "Canonical": "Sparkling Wine", "Category": "Wine", "In Stock": "No"}, {"Item": "Salt", "Canonical": "Salt", "Category": "Pantry", "In Stock": "Yes"}, {"Item": "Sugar", "Canonical": "Sugar", "Category": "Pantry", "In Stock": "Yes"}]};
+
+let CANON = BUNDLE.canon;
+let RECIPES = BUNDLE.recipes;
+let inventoryRows = SNAPSHOT.inventory;
+let pantryRows = SNAPSHOT.pantry;
+let dataSource = "snapshot";
+let fileHandle = null;
+let pantryOverrides = JSON.parse(localStorage.getItem("zachsBarPantryOverrides") || "{}");
+let favorites = new Set(JSON.parse(localStorage.getItem("zachsBarFavorites") || "[]"));
+let activeTags = new Set();
+let currentStatusFilter = "all";
+
+function saveFavorites(){
+  localStorage.setItem("zachsBarFavorites", JSON.stringify([...favorites]));
+}
+
+document.getElementById("btnToggleConn").addEventListener("click", () => {
+  document.getElementById("connBody").classList.toggle("open");
+});
+
+function idbOpen(){
+  return new Promise((res,rej)=>{
+    const req = indexedDB.open("zachsBarDB", 1);
+    req.onupgradeneeded = () => req.result.createObjectStore("handles");
+    req.onsuccess = () => res(req.result);
+    req.onerror = () => rej(req.error);
+  });
+}
+async function idbSet(key, val){
+  try{ const db = await idbOpen(); const tx = db.transaction("handles","readwrite");
+    tx.objectStore("handles").put(val, key); return new Promise(r=>tx.oncomplete=r); }catch(e){}
+}
+async function idbGet(key){
+  try{ const db = await idbOpen(); const tx = db.transaction("handles","readonly");
+    return new Promise((res)=>{ const r = tx.objectStore("handles").get(key); r.onsuccess=()=>res(r.result); r.onerror=()=>res(null); }); }catch(e){ return null; }
+}
+
+function sheetToRows(wb, name){
+  const ws = wb.Sheets[name];
+  if(!ws) return [];
+  return XLSX.utils.sheet_to_json(ws, {defval:""});
+}
+function loadWorkbookFromArrayBuffer(buf){
+  const wb = XLSX.read(buf, {type:"array"});
+  const inv = sheetToRows(wb, "Inventory");
+  const pantry = sheetToRows(wb, "Pantry");
+  return {inv: inv, pantry: pantry};
+}
+function applyLoadedData(inv, pantry, source){
+  inventoryRows = inv; pantryRows = pantry; dataSource = source;
+  renderAll();
+}
+
+async function fetchCsvAsRows(url){
+  const res = await fetch(url, {cache:"no-store"});
+  if(!res.ok) throw new Error("fetch failed: " + res.status);
+  const text = await res.text();
+  const wb = XLSX.read(text, {type:"string"});
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  return XLSX.utils.sheet_to_json(ws, {defval:""});
+}
+async function connectGoogleSheet(invUrl, pantryUrl, opts){
+  opts = opts || {};
+  try{
+    const results = await Promise.all([fetchCsvAsRows(invUrl), fetchCsvAsRows(pantryUrl)]);
+    localStorage.setItem("zachsBarSheetUrls", JSON.stringify({inv: invUrl, pantry: pantryUrl}));
+    applyLoadedData(results[0], results[1], "live-sheet");
+    document.getElementById("syncDot").className = "dot live";
+    document.getElementById("syncLabel").textContent = "live (Google Sheet)";
+    document.getElementById("syncHelp").textContent = "Reloading this page re-fetches your sheet automatically.";
+  }catch(e){
+    console.warn(e);
+    if(!opts.silent){
+      document.getElementById("syncHelp").textContent = "Could not fetch that Google Sheet link (" + e.message + "). Make sure both tabs are published to web as CSV, or use the local file option instead.";
+    }
+  }
+}
+document.getElementById("btnConnectSheet").addEventListener("click", () => {
+  const invUrl = document.getElementById("sheetInvUrl").value.trim();
+  const pantryUrl = document.getElementById("sheetPantryUrl").value.trim();
+  if(!invUrl || !pantryUrl) return;
+  connectGoogleSheet(invUrl, pantryUrl);
+});
+
+const supportsFSA = "showOpenFilePicker" in window;
+document.getElementById("btnConnect").addEventListener("click", async () => {
+  if(supportsFSA){
+    try{
+      const picked = await window.showOpenFilePicker({
+        types:[{description:"Excel", accept:{"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":[".xlsx"]}}]
+      });
+      const handle = picked[0];
+      fileHandle = handle;
+      await idbSet("barFile", handle);
+      const file = await handle.getFile();
+      const buf = await file.arrayBuffer();
+      const parsed = loadWorkbookFromArrayBuffer(buf);
+      applyLoadedData(parsed.inv, parsed.pantry, "live");
+      document.getElementById("btnRefresh").style.display = "";
+      updateSyncLabel(file.lastModified);
+    }catch(e){ console.warn(e); }
+  } else {
+    document.getElementById("fileFallback").click();
+  }
+});
+document.getElementById("fileFallback").addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+  if(!file) return;
+  const buf = await file.arrayBuffer();
+  const parsed = loadWorkbookFromArrayBuffer(buf);
+  applyLoadedData(parsed.inv, parsed.pantry, "live");
+  updateSyncLabel(file.lastModified);
+});
+document.getElementById("btnRefresh").addEventListener("click", async () => {
+  if(!fileHandle) return;
+  const perm = await fileHandle.requestPermission({mode:"read"});
+  if(perm !== "granted") return;
+  const file = await fileHandle.getFile();
+  const buf = await file.arrayBuffer();
+  const parsed = loadWorkbookFromArrayBuffer(buf);
+  applyLoadedData(parsed.inv, parsed.pantry, "live");
+  updateSyncLabel(file.lastModified);
+});
+function updateSyncLabel(lastModified){
+  document.getElementById("syncDot").className = "dot live";
+  const d = lastModified ? new Date(lastModified) : new Date();
+  document.getElementById("syncLabel").textContent = "live (file, " + d.toLocaleDateString() + ")";
+}
+async function tryAutoReconnect(){
+  const savedSheets = JSON.parse(localStorage.getItem("zachsBarSheetUrls") || "null");
+  if(savedSheets && savedSheets.inv && savedSheets.pantry){
+    document.getElementById("sheetInvUrl").value = savedSheets.inv;
+    document.getElementById("sheetPantryUrl").value = savedSheets.pantry;
+    await connectGoogleSheet(savedSheets.inv, savedSheets.pantry, {silent:true});
+    if(dataSource === "live-sheet") return;
+  }
+  if(!supportsFSA){
+    document.getElementById("syncHelp").textContent = "Live re-reading of a local file needs Chrome or Edge. A Google Sheet link works in any browser.";
+    return;
+  }
+  const handle = await idbGet("barFile");
+  if(handle){
+    const perm = await handle.queryPermission({mode:"read"});
+    if(perm === "granted"){
+      fileHandle = handle;
+      const file = await handle.getFile();
+      const buf = await file.arrayBuffer();
+      const parsed = loadWorkbookFromArrayBuffer(buf);
+      applyLoadedData(parsed.inv, parsed.pantry, "live");
+      document.getElementById("btnRefresh").style.display = "";
+      updateSyncLabel(file.lastModified);
+      return;
+    } else {
+      fileHandle = handle;
+      document.getElementById("btnRefresh").style.display = "";
+    }
+  }
+  document.getElementById("syncHelp").textContent = "Showing a snapshot from when this was cataloged. Click \"adjust the source\" above to connect a Google Sheet or local file.";
+}
+
+function ownedSet(){
+  const s = new Set();
+  inventoryRows.forEach(r => {
+    const canon = (r["Canonical"]||"").trim();
+    const inStock = String(r["In Stock"]||"").trim().toLowerCase();
+    if(canon && inStock === "yes") s.add(canon);
+  });
+  pantryRows.forEach(r => {
+    const canon = (r["Canonical"]||"").trim();
+    if(!canon) return;
+    if(pantryOverrides.hasOwnProperty(canon)){
+      if(pantryOverrides[canon]) s.add(canon);
+    } else {
+      const inStock = String(r["In Stock"]||"").trim().toLowerCase();
+      if(inStock === "yes") s.add(canon);
+    }
+  });
+  return s;
+}
+function evalRecipe(r, owned){
+  const missing = r.ingredients.filter(i => !owned.has(i.name)).map(i => i.name);
+  const status = missing.length===0 ? "now" : missing.length===1 ? "one" : missing.length===2 ? "two" : "many";
+  return Object.assign({}, r, {missing: missing, status: status});
+}
+function statusLabel(r){
+  return r.status==="now" ? "Ready to pour" : r.status==="one" ? "One bottle out" : r.status==="two" ? "Two bottles out" : r.missing.length + " bottles out";
+}
+
+function renderPantryToggles(){
+  const el = document.getElementById("pantryToggles");
+  el.innerHTML = "";
+  pantryRows.forEach(r => {
+    const canon = (r["Canonical"]||"").trim();
+    if(!canon) return;
+    const defaultOn = String(r["In Stock"]||"").trim().toLowerCase() === "yes";
+    const on = pantryOverrides.hasOwnProperty(canon) ? pantryOverrides[canon] : defaultOn;
+    const label = document.createElement("label");
+    label.innerHTML = '<input type="checkbox" style="margin-right:6px" ' + (on?"checked":"") + '/> ' + (r["Item"]||canon);
+    label.querySelector("input").addEventListener("change", e => {
+      pantryOverrides[canon] = e.target.checked;
+      localStorage.setItem("zachsBarPantryOverrides", JSON.stringify(pantryOverrides));
+      renderAll();
+    });
+    el.appendChild(label);
+  });
+}
+
+const ROI_EXCLUDE_CATEGORIES = new Set(["Fresh","Mixer","Pantry","Garnish"]);
+function isShoppableBottle(ing){
+  const c = CANON[ing];
+  return c && !ROI_EXCLUDE_CATEGORIES.has(c.category);
+}
+function renderROI(owned){
+  const evaluated = RECIPES.map(r => evalRecipe(r, owned));
+  const unlockCount = {}; const improveCount = {};
+  evaluated.forEach(r => {
+    if(r.status === "one"){ const ing = r.missing[0]; if(isShoppableBottle(ing)) unlockCount[ing] = (unlockCount[ing]||0)+1; }
+    if(r.status === "two"){ r.missing.forEach(ing => { if(isShoppableBottle(ing)) improveCount[ing] = (improveCount[ing]||0)+1; }); }
+  });
+  const candidates = new Set([].concat(Object.keys(unlockCount), Object.keys(improveCount)));
+  const rows = [...candidates].map(ing => ({ing: ing, unlock: unlockCount[ing]||0, improve: improveCount[ing]||0}));
+  rows.sort((a,b) => b.unlock - a.unlock || b.improve - a.improve);
+  const tbody = document.querySelector("#roiTable tbody");
+  tbody.innerHTML = "";
+  rows.slice(0,10).forEach(r => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = "<td>" + r.ing + "</td><td class=\"roi-count\">" + r.unlock + "</td><td class=\"small\">" + r.improve + "</td>";
+    tbody.appendChild(tr);
+  });
+  if(rows.length===0){
+    tbody.innerHTML = '<tr><td colspan="3" class="small">Nothing just one bottle away right now — the shelf is in good shape.</td></tr>';
+  }
+}
+
+function initFilterOptions(){
+  const baseSel = document.getElementById("baseFilter");
+  const bases = [...new Set(RECIPES.map(r=>r.base))].sort();
+  bases.forEach(b => { const o=document.createElement("option"); o.value=b; o.textContent=b; baseSel.appendChild(o); });
+  const tagCounts = {};
+  RECIPES.forEach(r => (r.tags||[]).forEach(t => tagCounts[t]=(tagCounts[t]||0)+1));
+  const topTags = Object.entries(tagCounts).sort((a,b)=>b[1]-a[1]).slice(0,14).map(x=>x[0]);
+  const el = document.getElementById("tagFilters");
+  el.innerHTML = "";
+  topTags.forEach(t => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "chip" + (activeTags.has(t) ? " active":"");
+    b.textContent = t;
+    b.onclick = () => {
+      if(activeTags.has(t)) activeTags.delete(t); else activeTags.add(t);
+      refreshTagActive();
+      renderAll();
+    };
+    el.appendChild(b);
+  });
+}
+function refreshTagActive(){
+  document.querySelectorAll("#tagFilters .chip").forEach(c => c.classList.toggle("active", activeTags.has(c.textContent)));
+}
+
+document.querySelectorAll("#statTiles .stat").forEach(btn => {
+  btn.addEventListener("click", () => {
+    currentStatusFilter = btn.dataset.filter;
+    document.querySelectorAll("#statTiles .stat").forEach(b => b.classList.toggle("active", b===btn));
+    renderAll();
+    document.getElementById("cards").scrollIntoView({behavior:"smooth", block:"start"});
+  });
+});
+
+let expandedCards = new Set();
+document.getElementById("cards").addEventListener("click", (e) => {
+  const pinBtn = e.target.closest(".pin-btn");
+  if(pinBtn){
+    const card = pinBtn.closest(".card");
+    const name = card.dataset.name;
+    if(favorites.has(name)) favorites.delete(name); else favorites.add(name);
+    saveFavorites();
+    const isPinned = favorites.has(name);
+    pinBtn.textContent = isPinned ? "\u2605" : "\u2606";
+    pinBtn.classList.toggle("pinned", isPinned);
+    document.getElementById("countFav").textContent = favorites.size;
+    return;
+  }
+  const card = e.target.closest(".card");
+  if(!card) return;
+  const name = card.dataset.name;
+  card.classList.toggle("expanded");
+  if(card.classList.contains("expanded")) expandedCards.add(name); else expandedCards.delete(name);
+});
+document.getElementById("btnExpandAll").addEventListener("click", () => {
+  document.querySelectorAll("#cards .card").forEach(c => { c.classList.add("expanded"); expandedCards.add(c.dataset.name); });
+});
+document.getElementById("btnCollapseAll").addEventListener("click", () => {
+  document.querySelectorAll("#cards .card").forEach(c => c.classList.remove("expanded"));
+  expandedCards.clear();
+});
+
+function renderCards(owned){
+  const q = document.getElementById("search").value.toLowerCase();
+  const baseF = document.getElementById("baseFilter").value;
+  const evaluated = RECIPES.map(r => evalRecipe(r, owned));
+  document.getElementById("countAll").textContent = evaluated.length;
+  document.getElementById("countNow").textContent = evaluated.filter(r=>r.status==="now").length;
+  document.getElementById("countOne").textContent = evaluated.filter(r=>r.status==="one").length;
+  document.getElementById("countTwo").textContent = evaluated.filter(r=>r.status==="two").length;
+  document.getElementById("countFav").textContent = favorites.size;
+  let results = evaluated.filter(r => {
+    if(currentStatusFilter==="fav"){
+      if(!favorites.has(r.name)) return false;
+    } else if(currentStatusFilter!=="all" && r.status!==currentStatusFilter){
+      return false;
+    }
+    if(baseF!=="all" && r.base!==baseF) return false;
+    if(activeTags.size){
+      const rTags = r.tags||[];
+      for(const t of activeTags){ if(!rTags.includes(t)) return false; }
+    }
+    const hay = [r.name,r.base,r.style].concat(r.ingredients.map(i=>i.name), r.tags||[]).join(" ").toLowerCase();
+    return !q || hay.includes(q);
+  });
+  results.sort((a,b) => {
+    const af = favorites.has(a.name) ? 0 : 1;
+    const bf = favorites.has(b.name) ? 0 : 1;
+    if(af !== bf) return af - bf;
+    return a.missing.length - b.missing.length || a.name.localeCompare(b.name);
+  });
+  document.getElementById("cardCount").textContent = results.length + " of " + evaluated.length + " in the catalog";
+  const grid = document.getElementById("cards");
+  grid.innerHTML = "";
+  results.forEach(r => {
+    const cls = r.status==="now"?"ok":r.status==="one"?"warn":"bad";
+    const label = statusLabel(r);
+    const isPinned = favorites.has(r.name);
+    const div = document.createElement("div");
+    div.className = "card" + (expandedCards.has(r.name) ? " expanded" : "");
+    div.dataset.name = r.name;
+    div.innerHTML = "<div class=\"card-head\"><h3>" + r.name + "</h3><span class=\"head-actions\"><button type=\"button\" class=\"pin-btn" + (isPinned?" pinned":"") + "\">" + (isPinned?"\u2605":"\u2606") + "</button><span class=\"chevron\">\u25be</span></span></div>" +
+      "<div class=\"meta\">" + r.base + " \u00b7 " + (r.style||"") + " \u00b7 " + (r.glass||"") + "</div>" +
+      "<span class=\"badge " + cls + "\">" + label + "</span>" +
+      (r.tags||[]).slice(0,3).map(t=>'<span class="badge neutral">'+t+'</span>').join("") +
+      "<ul class=\"ing-list\">" + r.ingredients.map(i=>"<li><span class=\"amt\">"+(i.amount?i.amount+" ":"")+"</span>"+i.name+(r.missing.includes(i.name)?' <span class="missing">(missing)</span>':'')+"</li>").join("") + "</ul>";
+    grid.appendChild(div);
+  });
+  if(results.length===0){
+    grid.innerHTML = '<p class="small">Nothing on the shelf matches that. Try clearing a filter.</p>';
+  }
+}
+
+const CANON_NAMES = Object.keys(CANON);
+const ALIASES = {};
+CANON_NAMES.forEach(n => ALIASES[n.toLowerCase()] = [n]);
+const EXTRA_ALIASES = {
+  "angostura bitters":["Aromatic Bitters"], "angostura":["Aromatic Bitters"], "aromatic bitters":["Aromatic Bitters"],
+  "orange bitters":["Orange Bitters"], "peychauds":["Peychaud's Bitters"], "peychaud's bitters":["Peychaud's Bitters"],
+  "soda water":["Club Soda"], "sparkling water":["Club Soda"], "seltzer":["Club Soda"],
+  "cointreau":["Triple Sec"], "orange liqueur":["Triple Sec"], "orange curacao":["Orange Curaçao"], "triple sec":["Triple Sec"],
+  "agave nectar":["Agave Syrup"], "agave":["Agave Syrup"],
+  "fresh lime juice":["Lime Juice"], "lime":["Lime Juice"], "fresh lemon juice":["Lemon Juice"], "lemon":["Lemon Juice"],
+  "orange juice":["Orange Juice"], "fresh orange juice":["Orange Juice"],
+  "heavy cream":["Cream"], "half and half":["Cream"],
+  "coffee":["Coffee"], "espresso":["Coffee"], "cold brew":["Coffee"],
+  "sugar syrup":["Simple Syrup"], "rich simple syrup":["Simple Syrup"],
+  "whiskey":["Bourbon","Rye Whiskey","Scotch","Irish Whiskey","American Whiskey"],
+  "bourbon whiskey":["Bourbon"], "rye":["Rye Whiskey"],
+  "gin":["Gin"], "london dry gin":["Gin"],
+  "tequila":["Reposado Tequila","Añejo Tequila","Extra Añejo Tequila","Blanco Tequila"],
+  "silver tequila":["Blanco Tequila"], "white tequila":["Blanco Tequila"], "blanco tequila":["Blanco Tequila"],
+  "reposado":["Reposado Tequila"], "anejo":["Añejo Tequila"], "añejo":["Añejo Tequila"],
+  "rum":["White Rum","Aged Rum"], "white rum":["White Rum"], "light rum":["White Rum"],
+  "dark rum":["Aged Rum"], "gold rum":["Aged Rum"], "aged rum":["Aged Rum"], "spiced rum":["Aged Rum"],
+  "vodka":["Vodka"], "vanilla vodka":["Vanilla Vodka"],
+  "sweet vermouth":["Sweet Vermouth"], "dry vermouth":["Dry Vermouth"],
+  "campari":["Campari"], "aperol":["Aperol"], "fernet":["Fernet Branca"],
+  "maraschino":["Maraschino Liqueur"], "luxardo":["Maraschino Liqueur"],
+  "green chartreuse":["Green Chartreuse"], "yellow chartreuse":["Yellow Chartreuse"],
+  "coffee liqueur":["Coffee Liqueur"], "kahlua":["Coffee Liqueur"], "kahlúa":["Coffee Liqueur"],
+  "cognac":["Cognac"], "brandy":["Cognac"],
+  "ginger beer":["Ginger Beer"], "ginger ale":["Ginger Ale"],
+  "tonic":["Tonic Water"], "tonic water":["Tonic Water"],
+  "cola":["Cola"], "coke":["Cola"],
+  "pineapple juice":["Pineapple Juice"], "cranberry juice":["Cranberry Juice"], "grapefruit juice":["Grapefruit Juice"],
+  "grenadine":["Grenadine"], "orgeat":["Orgeat"], "falernum":["Falernum"],
+  "egg white":["Egg White"], "mint":["Mint"], "mint leaves":["Mint"], "salt":["Salt"], "sugar":["Sugar"]
+};
+Object.assign(ALIASES, EXTRA_ALIASES);
+const IGNORE_WORDS = new Set(["ice","water","garnish","lime wheel","lime wedge","lemon twist","orange peel","orange twist","cherry","mint sprig"]);
+
+function stripQty(line){
+  return line
+    .replace(/^[\-\*\u2022]\s*/,"")
+    .replace(/^\d+([.\/]\d+)?\s*(oz|ounce|ounces|ml|cl|dash|dashes|tsp|tbsp|cup|cups|part|parts|barspoon|splash|drops?)?\.?\s*(of)?\s*/i,"")
+    .replace(/\(.*?\)/g,"")
+    .trim();
+}
+function guessMatches(rawLine){
+  const stripped = stripQty(rawLine).toLowerCase().trim();
+  if(!stripped || IGNORE_WORDS.has(stripped)) return {raw: rawLine, stripped: stripped, matches: [], ignore: true};
+  if(ALIASES[stripped]) return {raw: rawLine, stripped: stripped, matches: ALIASES[stripped], ignore:false};
+  let hits = new Set();
+  for(const key in ALIASES){
+    if(stripped.includes(key) || key.includes(stripped)){
+      ALIASES[key].forEach(v=>hits.add(v));
+    }
+  }
+  return {raw: rawLine, stripped: stripped, matches: [...hits], ignore:false};
+}
+
+const NAME_STOPWORDS = new Set(["a","an","the","and","or","with","like","some","something","for","of","my","me","please","find","search","that","is","was","drink","cocktail","cocktails","recipe"]);
+function normalizeName(s){
+  return (s||"").toLowerCase().replace(/[^a-z0-9]+/g," ").trim().replace(/\s+/g," ");
+}
+function nameTokens(s){
+  return normalizeName(s).split(" ").filter(w => w && !NAME_STOPWORDS.has(w));
+}
+function levenshtein(a, b){
+  const m = a.length, n = b.length;
+  const dp = Array.from({length: m+1}, (_, i) => [i].concat(Array(n).fill(0)));
+  for(let j=0;j<=n;j++) dp[0][j] = j;
+  for(let i=1;i<=m;i++){
+    for(let j=1;j<=n;j++){
+      dp[i][j] = a[i-1]===b[j-1] ? dp[i-1][j-1] : 1 + Math.min(dp[i-1][j], dp[i][j-1], dp[i-1][j-1]);
+    }
+  }
+  return dp[m][n];
+}
+function tokenFuzzyEqual(a, b){
+  if(a === b) return true;
+  if(Math.abs(a.length - b.length) > 2) return false;
+  const maxLen = Math.max(a.length, b.length);
+  const threshold = maxLen <= 5 ? 1 : 2;
+  return levenshtein(a, b) <= threshold;
+}
+function scoreNameMatch(queryNorm, queryTokens, recipe){
+  const nameNorm = normalizeName(recipe.name);
+  if(!nameNorm) return 0;
+  if(queryNorm === nameNorm) return 100;
+  if(queryNorm.length>=4 && (queryNorm.includes(nameNorm) || nameNorm.includes(queryNorm))){
+    const shorter = Math.min(queryNorm.length, nameNorm.length);
+    const longer = Math.max(queryNorm.length, nameNorm.length);
+    if(shorter / longer >= 0.6) return 92;
+  }
+  const rTokens = nameTokens(recipe.name);
+  if(rTokens.length && queryTokens.length){
+    let overlap = 0;
+    const usedQuery = new Set();
+    rTokens.forEach(rt => {
+      let matchIdx = -1;
+      for(let i=0;i<queryTokens.length;i++){
+        if(usedQuery.has(i)) continue;
+        if(tokenFuzzyEqual(rt, queryTokens[i])){ matchIdx = i; break; }
+      }
+      if(matchIdx>=0){ overlap++; usedQuery.add(matchIdx); }
+    });
+    const dice = (2*overlap) / (rTokens.length + queryTokens.length);
+    if(dice > 0) return Math.round(dice*88);
+  }
+  return 0;
+}
+function findBestNameMatches(text){
+  const candidateQueries = [text, (text.split("\n")[0]||"")].map(s=>s.trim()).filter(Boolean);
+  const byName = {};
+  candidateQueries.forEach(q => {
+    const qn = normalizeName(q);
+    if(!qn) return;
+    const qt = nameTokens(q);
+    RECIPES.forEach(r => {
+      const s = scoreNameMatch(qn, qt, r);
+      if(s>0 && (!byName[r.name] || byName[r.name].score < s)) byName[r.name] = {recipe:r, score:s};
+    });
+  });
+  return Object.values(byName).sort((a,b)=>b.score-a.score);
+}
+
+let pasteMode = "empty";
+let lastNameMatches = [];
+let currentGuesses = [];
+
+document.getElementById("btnParse").addEventListener("click", () => {
+  const text = document.getElementById("pasteBox").value;
+  if(!text.trim()){
+    pasteMode = "empty";
+    document.getElementById("pasteLines").innerHTML = "";
+    document.getElementById("pasteResult").innerHTML = "";
+    return;
+  }
+  const nameMatches = findBestNameMatches(text);
+  if(nameMatches.length && nameMatches[0].score >= 50){
+    pasteMode = "name";
+    lastNameMatches = nameMatches;
+    currentGuesses = [];
+    document.getElementById("pasteLines").innerHTML = "";
+    renderNameMatch(nameMatches);
+    return;
+  }
+  pasteMode = "lines";
+  lastNameMatches = [];
+  const lines = text.split("\n").map(l=>l.trim()).filter(Boolean);
+  const guesses = lines.map(guessMatches);
+  renderPasteLines(guesses);
+});
+
+function renderNameMatch(matches){
+  const top = matches[0];
+  const owned = ownedSet();
+  const r = evalRecipe(top.recipe, owned);
+  const cls = r.status==="now"?"ok":r.status==="one"?"warn":"bad";
+  const label = statusLabel(r);
+  const isPinned = favorites.has(r.name);
+  let html = '<div style="margin-bottom:6px;display:flex;align-items:center;gap:8px"><strong>' + r.name + '</strong> <span class="small">' + r.base + (r.style?(" \u00b7 "+r.style):"") + '</span><button type="button" class="pin-btn' + (isPinned?' pinned':'') + '" id="nameMatchPin">' + (isPinned?"\u2605":"\u2606") + '</button></div>';
+  html += '<span class="badge ' + cls + '">' + label + '</span>';
+  html += '<ul>' + r.ingredients.map(i=>"<li><span class=\"amt\">"+(i.amount?i.amount+" ":"")+"</span>"+i.name+(r.missing.includes(i.name)?' <span class="missing">(missing)</span>':'')+"</li>").join("") + '</ul>';
+  const alts = matches.slice(1,4).filter(m=>m.score>=40);
+  if(alts.length){
+    html += '<div class="small" style="margin-top:10px">Not quite it? ' + alts.map(m=>'<button type="button" class="chip" data-alt="'+m.recipe.name.replace(/"/g,"&quot;")+'" style="margin:0 6px 4px 0">'+m.recipe.name+'</button>').join(" ") + '</div>';
+  }
+  const resultEl = document.getElementById("pasteResult");
+  resultEl.innerHTML = html;
+  resultEl.className = "paste-result";
+  resultEl.querySelectorAll("[data-alt]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const picked = matches.find(m => m.recipe.name === btn.dataset.alt);
+      if(!picked) return;
+      const reordered = [picked].concat(matches.filter(m => m !== picked));
+      lastNameMatches = reordered;
+      renderNameMatch(reordered);
+    });
+  });
+  const pinBtn = document.getElementById("nameMatchPin");
+  if(pinBtn){
+    pinBtn.addEventListener("click", () => {
+      if(favorites.has(r.name)) favorites.delete(r.name); else favorites.add(r.name);
+      saveFavorites();
+      document.getElementById("countFav").textContent = favorites.size;
+      renderNameMatch(matches);
+    });
+  }
+}
+
+function renderPasteLines(guesses){
+  pasteMode = "lines";
+  lastNameMatches = [];
+  currentGuesses = guesses;
+  const el = document.getElementById("pasteLines");
+  el.innerHTML = "";
+  guesses.forEach((g, idx) => {
+    if(g.ignore) return;
+    const row = document.createElement("div");
+    row.className = "paste-line";
+    const sel = document.createElement("select");
+    const noneOpt = document.createElement("option"); noneOpt.value=""; noneOpt.textContent="\u2014 ignore this line \u2014";
+    sel.appendChild(noneOpt);
+    CANON_NAMES.forEach(name => {
+      const o = document.createElement("option"); o.value = name; o.textContent = name;
+      if(g.matches[0] === name) o.selected = true;
+      sel.appendChild(o);
+    });
+    if(!g.matches.length) sel.value = "";
+    sel.addEventListener("change", () => { currentGuesses[idx].chosen = sel.value; computePasteResult(); });
+    g.chosen = g.matches[0] || "";
+    row.innerHTML = '<span style="flex:1;color:var(--muted)">' + g.raw + '</span>';
+    row.appendChild(sel);
+    el.appendChild(row);
+  });
+  computePasteResult();
+}
+function computePasteResult(){
+  const owned = ownedSet();
+  const chosenIngredients = currentGuesses.filter(g=>!g.ignore && g.chosen).map(g=>g.chosen);
+  const resultEl = document.getElementById("pasteResult");
+  if(chosenIngredients.length===0){ resultEl.innerHTML = ""; return; }
+  const missing = chosenIngredients.filter(i => !owned.has(i));
+  const have = chosenIngredients.filter(i => owned.has(i));
+  let html = "";
+  if(missing.length===0){
+    html = '<span class="badge ok">Ready to pour</span>';
+  } else {
+    html = '<span class="badge ' + (missing.length===1?'warn':'bad') + '">Missing ' + missing.length + ': ' + missing.join(", ") + '</span>';
+  }
+  html += '<div class="small" style="margin-top:8px">On hand: ' + (have.join(", ")||"none yet") + '</div>';
+  resultEl.innerHTML = html;
+  resultEl.className = "paste-result";
+}
+
+function renderAll(){
+  const owned = ownedSet();
+  renderPantryToggles();
+  renderROI(owned);
+  renderCards(owned);
+  if(pasteMode === "lines" && currentGuesses.length) computePasteResult();
+  else if(pasteMode === "name" && lastNameMatches.length) renderNameMatch(lastNameMatches);
+}
+["search","baseFilter"].forEach(id => document.getElementById(id).addEventListener("input", renderAll));
+
+initFilterOptions();
+renderAll();
+tryAutoReconnect();
+</script>
+</body>
+</html>
