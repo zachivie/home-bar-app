@@ -96,8 +96,9 @@ border-radius:50%;transition:transform .15s ease;box-shadow:0 1px 2px rgba(0,0,0
 .dot.live{background:var(--ok)}
 .dot.snapshot{background:var(--warn)}
 .sync-mini button{background:none;border:none;color:var(--accent);padding:0;font-size:12px;text-decoration:underline;cursor:pointer}
-.conn-panel{display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
-.conn-panel.open{display:block}
+.conn-panel{display:none}
+.conn-panel.open{display:block;background:var(--panel);border:1px solid var(--line);border-radius:14px;
+padding:20px;margin:16px 0;box-shadow:0 1px 3px rgba(43,36,28,.07),0 1px 2px rgba(43,36,28,.05)}
 table{width:100%;border-collapse:collapse;font-size:13.5px;margin-top:8px}
 th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line)}
 th{color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.05em}
@@ -105,12 +106,7 @@ th{color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase;le
 .roi-add-btn{background:none;border:1px solid var(--line);border-radius:8px;padding:5px 10px;font-size:11.5px;
 color:var(--accent);cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap}
 .roi-add-btn:hover{background:var(--ok-bg)}
-.universal-search-row{display:flex;align-items:center;gap:10px;background:#fffdf8;border:1px solid var(--line);
-border-radius:12px;padding:2px 16px}
-.universal-search-row .search-icon{font-size:14px;flex:none;opacity:.55}
-.universal-search-row input{border:none;background:transparent;padding:12px 0;border-radius:0}
-.universal-search-row input:focus{outline:none}
-.top-search-panel{position:sticky;top:0;z-index:60;margin-top:0;padding:12px 16px}
+
 .paste-line{display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line);font-size:13.5px}
 .paste-line select{width:auto;flex:1}
 .paste-result{margin-top:12px;padding:14px;border-radius:5px;background:#fffdf8;border:1px solid var(--line)}
@@ -147,11 +143,7 @@ border-radius:12px;padding:2px 16px}
 </header>
 <main>
 
-<section class="panel top-search-panel" id="connPanel">
-  <div class="universal-search-row">
-    <span class="search-icon">🔍</span>
-    <input type="text" id="universalSearch" placeholder="Search recipes or ingredients — gin, French 75, patio..." />
-  </div>
+<section id="connPanel">
   <div class="conn-panel" id="connBody">
     <p class="small" id="syncHelp" style="margin-bottom:10px"></p>
     <p class="small"><strong>Google Sheet</strong> — File &gt; Share &gt; Publish to web, publish the Inventory tab as CSV, paste the link below. Do the same for the Pantry tab.</p>
@@ -258,8 +250,6 @@ let shelfAdditions = new Set(JSON.parse(localStorage.getItem("zachsBarShelfAddit
 let pantryAdditions = new Set(JSON.parse(localStorage.getItem("zachsBarPantryAdditions") || "[]"));
 let activeTags = new Set();
 let currentStatusFilter = "all";
-let lastCardResultCount = 0;
-let topSearchOwnsResult = false;
 
 function saveFavorites(){
   localStorage.setItem("zachsBarFavorites", JSON.stringify([...favorites]));
@@ -642,7 +632,6 @@ document.getElementById("btnCollapseAll").addEventListener("click", () => {
 });
 
 function renderCards(owned){
-  const q = document.getElementById("universalSearch").value.toLowerCase();
   const baseF = document.getElementById("baseFilter").value;
   const evaluated = RECIPES.map(r => evalRecipe(r, owned));
   document.getElementById("countAll").textContent = evaluated.length;
@@ -661,8 +650,7 @@ function renderCards(owned){
       const rTags = r.tags||[];
       for(const t of activeTags){ if(!rTags.includes(t)) return false; }
     }
-    const hay = [r.name,r.base,r.style].concat(r.ingredients.map(i=>i.name), r.tags||[]).join(" ").toLowerCase();
-    return !q || hay.includes(q);
+    return true;
   });
   results.sort((a,b) => {
     const af = favorites.has(a.name) ? 0 : 1;
@@ -671,7 +659,6 @@ function renderCards(owned){
     return a.missing.length - b.missing.length || a.name.localeCompare(b.name);
   });
   document.getElementById("cardCount").textContent = results.length + " of " + evaluated.length + " in the catalog";
-  lastCardResultCount = results.length;
   const grid = document.getElementById("cards");
   grid.innerHTML = "";
   results.forEach(r => {
@@ -819,45 +806,11 @@ function findBestNameMatches(text){
   return Object.values(byName).sort((a,b)=>b.score-a.score);
 }
 
-function handleTopSearchFuzzy(){
-  const raw = document.getElementById("universalSearch").value;
-  const q = raw.trim();
-  const resultEl = document.getElementById("pasteResult");
-  const clearIfOwned = () => {
-    if(topSearchOwnsResult){
-      resultEl.innerHTML = "";
-      resultEl.className = "";
-      pasteMode = "empty";
-      lastNameMatches = [];
-      topSearchOwnsResult = false;
-    }
-  };
-  if(!q || lastCardResultCount > 0){
-    clearIfOwned();
-    return;
-  }
-  const matches = findBestNameMatches(q);
-  if(matches.length && matches[0].score >= 50){
-    pasteMode = "name";
-    lastNameMatches = matches;
-    topSearchOwnsResult = true;
-    renderNameMatch(matches);
-    if(resultEl.scrollIntoView) resultEl.scrollIntoView({behavior:"smooth", block:"center"});
-  } else {
-    pasteMode = "empty";
-    lastNameMatches = [];
-    topSearchOwnsResult = true;
-    resultEl.innerHTML = '<p class="small">No match for \u201c' + q + '\u201d in the catalog yet.</p>';
-    resultEl.className = "paste-result";
-  }
-}
-
 let pasteMode = "empty";
 let lastNameMatches = [];
 let currentGuesses = [];
 
 document.getElementById("btnParse").addEventListener("click", () => {
-  topSearchOwnsResult = false;
   const text = document.getElementById("pasteBox").value;
   if(!text.trim()){
     pasteMode = "empty";
@@ -972,11 +925,6 @@ function renderAll(){
   else if(pasteMode === "name" && lastNameMatches.length) renderNameMatch(lastNameMatches);
 }
 document.getElementById("baseFilter").addEventListener("input", renderAll);
-document.getElementById("universalSearch").addEventListener("input", () => {
-  goToTab("catalog");
-  renderAll();
-  handleTopSearchFuzzy();
-});
 
 initFilterOptions();
 populateCanonList();
