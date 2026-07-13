@@ -240,6 +240,12 @@ document.querySelectorAll("#tabBar button").forEach(btn => {
   });
 });
 
+if("serviceWorker" in navigator){
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js").catch(() => {});
+  });
+}
+
 function idbOpen(){
   return new Promise((res,rej)=>{
     const req = indexedDB.open("zachsBarDB", 1);
