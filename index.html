@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>The Home Bar — A Field Guide</title>
+<title>Pourable</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#3c5a45">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Home Bar">
+<meta name="apple-mobile-web-app-title" content="Pourable">
 <link rel="apple-touch-icon" href="icon-192.png">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -133,7 +133,7 @@ color:var(--accent);cursor:pointer;font-family:'Inter',sans-serif;white-space:no
 <body>
 <header>
   <div>
-    <h1>The Home Bar <em>— A Field Guide</em></h1>
+    <h1>Pourable<em> — what's ready to drink</em></h1>
     <p>A running account of what's on the shelf, what's worth pouring tonight, and what's worth chasing down next.</p>
   </div>
   <div class="sync-mini">
@@ -188,8 +188,21 @@ color:var(--accent);cursor:pointer;font-family:'Inter',sans-serif;white-space:no
 <section class="panel" data-tab="catalog">
   <span class="eyebrow">The Catalog</span>
   <h2>What's Pourable</h2>
+  <div class="row" style="margin-top:10px;align-items:center">
+    <span class="small">Serving for</span>
+    <button type="button" id="headcountMinus">−</button>
+    <strong id="headcountVal" style="min-width:22px;text-align:center;font-family:'Fraunces',serif;font-size:18px">1</strong>
+    <button type="button" id="headcountPlus">+</button>
+    <span class="small">people</span>
+  </div>
   <div class="filters" style="margin-top:10px">
     <select id="baseFilter"><option value="all">All spirits</option></select>
+  </div>
+  <p class="small" style="margin-top:10px">Not sure where to start?</p>
+  <div class="filters" id="moodFilters">
+    <button type="button" class="chip mood-btn" data-mood="lighter">Something Lighter</button>
+    <button type="button" class="chip mood-btn" data-mood="reflective">Feeling Reflective</button>
+    <button type="button" class="chip mood-btn" data-mood="brighten">Brighten the Mood</button>
   </div>
   <p class="small" style="margin-top:2px">Tap tags to combine them — patio + gin finds both.</p>
   <div class="filters" id="tagFilters"></div>
@@ -250,6 +263,54 @@ let shelfAdditions = new Set(JSON.parse(localStorage.getItem("zachsBarShelfAddit
 let pantryAdditions = new Set(JSON.parse(localStorage.getItem("zachsBarPantryAdditions") || "[]"));
 let activeTags = new Set();
 let currentStatusFilter = "all";
+let activeMood = null;
+let headcount = parseInt(localStorage.getItem("zachsBarHeadcount")||"1", 10);
+if(!headcount || headcount < 1) headcount = 1;
+
+const MOODS = {
+  lighter: {tags:["refreshing","citrus","low abv","low calorie","sparkling","summer","fizzy","spring"], styles:["refreshing","citrus","low abv","fizzy"]},
+  reflective: {tags:["spirit-forward","classic","bitter","amaro","vermouth"], styles:["spirit-forward","bitter","stirred"]},
+  brighten: {tags:["party","tiki","tropical","fruity","trending","viral","bubbly","impress guests"], styles:["tiki","fruit"]}
+};
+function recipeMatchesMood(r, moodKey){
+  const mood = MOODS[moodKey];
+  if(!mood) return true;
+  const rTags = (r.tags||[]).map(t=>t.toLowerCase());
+  if(mood.tags.some(t => rTags.includes(t))) return true;
+  const rStyle = (r.style||"").toLowerCase();
+  if(mood.styles.some(s => rStyle.includes(s))) return true;
+  return false;
+}
+function parseQtyPrefix(amount){
+  const m = amount.match(/^(\d+\/\d+|\d+\.\d+|\d+)(\s*)(.*)$/);
+  if(!m) return null;
+  const numPart = m[1], rest = m[3];
+  let value;
+  if(numPart.indexOf("/") !== -1){
+    const parts = numPart.split("/");
+    value = parseFloat(parts[0]) / parseFloat(parts[1]);
+  } else {
+    value = parseFloat(numPart);
+  }
+  return {value: value, rest: rest};
+}
+function formatQty(n){
+  const rounded = Math.round(n*4)/4;
+  const whole = Math.floor(rounded + 1e-9);
+  const frac = Math.round((rounded - whole)*100)/100;
+  const fracMap = {0:"", 0.25:"1/4", 0.5:"1/2", 0.75:"3/4"};
+  const fracStr = (fracMap[frac] !== undefined) ? fracMap[frac] : String(frac);
+  if(whole === 0 && fracStr) return fracStr;
+  if(!fracStr) return String(whole);
+  return whole + " " + fracStr;
+}
+function scaleAmount(amount, count){
+  if(!amount || count <= 1) return amount;
+  const parsed = parseQtyPrefix(amount);
+  if(!parsed) return amount + " (\u00d7" + count + ")";
+  const qtyStr = formatQty(parsed.value * count);
+  return parsed.rest ? (qtyStr + " " + parsed.rest) : qtyStr;
+}
 
 function saveFavorites(){
   localStorage.setItem("zachsBarFavorites", JSON.stringify([...favorites]));
@@ -264,6 +325,31 @@ function savePantryAdditions(){
 document.getElementById("btnToggleConn").addEventListener("click", () => {
   document.getElementById("connBody").classList.toggle("open");
 });
+
+document.getElementById("moodFilters").addEventListener("click", (e) => {
+  const btn = e.target.closest(".mood-btn");
+  if(!btn) return;
+  const key = btn.dataset.mood;
+  activeMood = (activeMood === key) ? null : key;
+  document.querySelectorAll(".mood-btn").forEach(b => b.classList.toggle("active", b.dataset.mood === activeMood));
+  renderAll();
+});
+function updateHeadcountDisplay(){
+  document.getElementById("headcountVal").textContent = headcount;
+}
+document.getElementById("headcountMinus").addEventListener("click", () => {
+  headcount = Math.max(1, headcount - 1);
+  localStorage.setItem("zachsBarHeadcount", String(headcount));
+  updateHeadcountDisplay();
+  renderAll();
+});
+document.getElementById("headcountPlus").addEventListener("click", () => {
+  headcount = Math.min(24, headcount + 1);
+  localStorage.setItem("zachsBarHeadcount", String(headcount));
+  updateHeadcountDisplay();
+  renderAll();
+});
+updateHeadcountDisplay();
 
 document.body.classList.add("view-catalog");
 function goToTab(tabName){
@@ -650,6 +736,7 @@ function renderCards(owned){
       const rTags = r.tags||[];
       for(const t of activeTags){ if(!rTags.includes(t)) return false; }
     }
+    if(activeMood && !recipeMatchesMood(r, activeMood)) return false;
     return true;
   });
   results.sort((a,b) => {
@@ -672,7 +759,7 @@ function renderCards(owned){
       "<div class=\"card-body\">" +
       "<div class=\"meta\">" + r.base + " \u00b7 " + (r.style||"") + " \u00b7 " + (r.glass||"") + "</div>" +
       (r.tags||[]).slice(0,3).map(t=>'<span class="badge neutral">'+t+'</span>').join("") +
-      "<ul class=\"ing-list\">" + r.ingredients.map(i=>"<li><span class=\"amt\">"+(i.amount?i.amount+" ":"")+"</span>"+i.name+(r.missing.includes(i.name)?' <span class="missing">(missing)</span>':'')+"</li>").join("") + "</ul>" +
+      "<ul class=\"ing-list\">" + r.ingredients.map(i=>"<li><span class=\"amt\">"+(i.amount?scaleAmount(i.amount, headcount)+" ":"")+"</span>"+i.name+(r.missing.includes(i.name)?' <span class="missing">(missing)</span>':'')+"</li>").join("") + "</ul>" +
       "</div>";
     grid.appendChild(div);
   });
@@ -843,7 +930,7 @@ function renderNameMatch(matches){
   const isPinned = favorites.has(r.name);
   let html = '<div style="margin-bottom:6px;display:flex;align-items:center;gap:8px"><strong>' + r.name + '</strong> <span class="small">' + r.base + (r.style?(" \u00b7 "+r.style):"") + '</span><button type="button" class="pin-btn' + (isPinned?' pinned':'') + '" id="nameMatchPin">' + (isPinned?"\u2605":"\u2606") + '</button></div>';
   html += '<span class="badge ' + cls + '">' + label + '</span>';
-  html += '<ul>' + r.ingredients.map(i=>"<li><span class=\"amt\">"+(i.amount?i.amount+" ":"")+"</span>"+i.name+(r.missing.includes(i.name)?' <span class="missing">(missing)</span>':'')+"</li>").join("") + '</ul>';
+  html += '<ul>' + r.ingredients.map(i=>"<li><span class=\"amt\">"+(i.amount?scaleAmount(i.amount, headcount)+" ":"")+"</span>"+i.name+(r.missing.includes(i.name)?' <span class="missing">(missing)</span>':'')+"</li>").join("") + '</ul>';
   const alts = matches.slice(1,4).filter(m=>m.score>=40);
   if(alts.length){
     html += '<div class="small" style="margin-top:10px">Not quite it? ' + alts.map(m=>'<button type="button" class="chip" data-alt="'+m.recipe.name.replace(/"/g,"&quot;")+'" style="margin:0 6px 4px 0">'+m.recipe.name+'</button>').join(" ") + '</div>';
