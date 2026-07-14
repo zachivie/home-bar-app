@@ -191,6 +191,7 @@ color:var(--accent);cursor:pointer;font-family:'Inter',sans-serif;white-space:no
   <textarea id="pasteBox" placeholder="Try a name like &quot;negroni sbagliato&quot; or paste:&#10;2 oz gin&#10;0.75 oz lime juice&#10;0.5 oz simple syrup&#10;dash orange bitters" style="margin-top:10px"></textarea>
   <div class="row" style="margin-top:8px">
     <button class="primary" id="btnParse">Track It Down</button>
+    <button type="button" id="btnClearSearch">Clear</button>
   </div>
   <div id="pasteLines"></div>
   <div id="pasteResult"></div>
@@ -214,9 +215,6 @@ color:var(--accent);cursor:pointer;font-family:'Inter',sans-serif;white-space:no
     <button type="button" class="chip mood-btn" data-mood="lighter">Something Lighter</button>
     <button type="button" class="chip mood-btn" data-mood="reflective">Feeling Reflective</button>
     <button type="button" class="chip mood-btn" data-mood="brighten">Brighten the Mood</button>
-  </div>
-  <div class="row" style="margin-top:8px">
-    <button type="button" id="btnResetFilters">Reset Filters</button>
   </div>
   <div class="row" style="margin-top:4px">
     <span class="small" id="cardCount"></span>
@@ -252,6 +250,28 @@ color:var(--accent);cursor:pointer;font-family:'Inter',sans-serif;white-space:no
   <p class="small" id="customRecipeMsg" style="margin-top:8px"></p>
   <div id="customRecipeList"></div>
   <datalist id="baseList"></datalist>
+</section>
+
+<section class="panel" data-tab="recipes">
+  <span class="eyebrow">Back It Up</span>
+  <h2>Save Your Bar</h2>
+  <p class="small" style="margin-top:4px">Your bottles, fresh goods, favorites, and recipes only live in this browser. Phones can quietly clear that data after a couple weeks unused — back it up so you don't lose it.</p>
+  <div class="row" style="margin-top:10px">
+    <button type="button" id="btnExportBar">Get My Backup Code</button>
+  </div>
+  <div id="exportCodeWrap" style="display:none;margin-top:10px">
+    <textarea id="exportCodeBox" readonly style="min-height:70px"></textarea>
+    <div class="row" style="margin-top:8px">
+      <button type="button" id="btnCopyExportCode">Copy Code</button>
+    </div>
+    <p class="small" id="exportMsg" style="margin-top:6px"></p>
+  </div>
+  <p class="small" style="margin-top:16px"><strong>Restoring on this or another device?</strong></p>
+  <div class="row" style="margin-top:8px">
+    <input type="text" id="importCodeInput" placeholder="Paste your backup code here" />
+    <button class="primary" id="btnImportBar">Restore</button>
+  </div>
+  <p class="small" id="importMsg" style="margin-top:6px"></p>
 </section>
 
 <div class="two-col">
@@ -628,6 +648,19 @@ function registerCustomCanonName(name){
   ALIASES[name.toLowerCase()] = [name];
   populateCanonList();
 }
+function rehydrateCustomCanon(){
+  const names = new Set();
+  shelfAdditions.forEach(n => names.add(n));
+  pantryAdditions.forEach(n => names.add(n));
+  customRecipes.forEach(r => (r.ingredients||[]).forEach(i => { if(i.name) names.add(i.name); }));
+  names.forEach(name => {
+    if(!CANON_NAMES.includes(name)){
+      CANON_NAMES.push(name);
+      CANON[name] = CANON[name] || {category: 'Other'};
+    }
+    if(!ALIASES[name.toLowerCase()]) ALIASES[name.toLowerCase()] = [name];
+  });
+}
 function addPantryItem(){
   const input = document.getElementById("pantryAddInput");
   const raw = input.value.trim();
@@ -732,17 +765,6 @@ function initFilterOptions(){
 function refreshTagActive(){
   document.querySelectorAll("#tagFilters .tag-chip").forEach(c => c.classList.toggle("active", activeTags.has(c.textContent)));
 }
-function resetAllFilters(){
-  activeTags.clear();
-  activeMood = null;
-  document.getElementById("baseFilter").value = "all";
-  currentStatusFilter = "all";
-  document.querySelectorAll("#statTiles .stat").forEach(b => b.classList.toggle("active", b.dataset.filter==="all"));
-  refreshTagActive();
-  document.querySelectorAll(".mood-btn").forEach(b => b.classList.remove("active"));
-  renderAll();
-}
-document.getElementById("btnResetFilters").addEventListener("click", resetAllFilters);
 function populateCanonList(){
   const dl = document.getElementById("canonList");
   dl.innerHTML = CANON_NAMES.map(n => "<option value=\"" + n + "\"></option>").join("");
@@ -1043,6 +1065,16 @@ let pasteMode = "empty";
 let lastNameMatches = [];
 let currentGuesses = [];
 
+function clearSearch(){
+  document.getElementById("pasteBox").value = "";
+  document.getElementById("pasteLines").innerHTML = "";
+  document.getElementById("pasteResult").innerHTML = "";
+  pasteMode = "empty";
+  lastNameMatches = [];
+  currentGuesses = [];
+}
+document.getElementById("btnClearSearch").addEventListener("click", clearSearch);
+
 document.getElementById("btnParse").addEventListener("click", () => {
   const text = document.getElementById("pasteBox").value;
   if(!text.trim()){
@@ -1145,7 +1177,7 @@ function computePasteResult(){
     html = '<span class="badge ' + (missing.length===1?'warn':'bad') + '">Missing ' + missing.length + ': ' + missing.join(", ") + '</span>';
   }
   html += '<div class="small" style="margin-top:8px">On hand: ' + (have.join(", ")||"none yet") + '</div>';
-  resultEl.innerHTML = html;
+resultEl.innerHTML = html;
   resultEl.className = "paste-result";
 }
 
@@ -1167,6 +1199,82 @@ document.getElementById("customRecipeList").addEventListener("click", (e) => {
   removeCustomRecipe(btn.dataset.id);
 });
 
+function exportBarCode(){
+  const payload = {
+    v: 1,
+    shelf: [...shelfAdditions],
+    pantryAdd: [...pantryAdditions],
+    pantryOv: pantryOverrides,
+    fav: [...favorites],
+    custom: customRecipes,
+    headcount: headcount
+  };
+  const json = JSON.stringify(payload);
+  return btoa(unescape(encodeURIComponent(json)));
+}
+function importBarCode(code){
+  let payload;
+  try {
+    const json = decodeURIComponent(escape(atob(code.trim())));
+    payload = JSON.parse(json);
+  } catch(e){
+    return {ok:false, error:"That code doesn’t look right — check for typos or missing characters."};
+  }
+  if(!payload || typeof payload !== "object" || !Array.isArray(payload.shelf)){
+    return {ok:false, error:"That code doesn’t look right — check for typos or missing characters."};
+  }
+  shelfAdditions = new Set(payload.shelf||[]);
+  pantryAdditions = new Set(payload.pantryAdd||[]);
+  pantryOverrides = payload.pantryOv||{};
+  favorites = new Set(payload.fav||[]);
+  customRecipes = Array.isArray(payload.custom) ? payload.custom : [];
+  headcount = payload.headcount || 1;
+  saveShelfAdditions();
+  savePantryAdditions();
+  localStorage.setItem("zachsBarPantryOverrides", JSON.stringify(pantryOverrides));
+  saveFavorites();
+  saveCustomRecipes();
+  localStorage.setItem("zachsBarHeadcount", String(headcount));
+  RECIPES = BUNDLE.recipes.concat(customRecipes);
+  rehydrateCustomCanon();
+  return {ok:true};
+}
+document.getElementById("btnExportBar").addEventListener("click", () => {
+  const code = exportBarCode();
+  document.getElementById("exportCodeBox").value = code;
+  document.getElementById("exportCodeWrap").style.display = "";
+  document.getElementById("exportMsg").textContent = "";
+});
+document.getElementById("btnCopyExportCode").addEventListener("click", () => {
+  const box = document.getElementById("exportCodeBox");
+  box.select();
+  const msg = document.getElementById("exportMsg");
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(box.value).then(() => { msg.textContent = "Copied."; }).catch(() => { msg.textContent = "Couldn’t copy automatically — select the text above and copy it manually."; });
+  } else {
+    try { document.execCommand("copy"); msg.textContent = "Copied."; }
+    catch(e){ msg.textContent = "Couldn’t copy automatically — select the text above and copy it manually."; }
+  }
+});
+document.getElementById("btnImportBar").addEventListener("click", () => {
+  const input = document.getElementById("importCodeInput");
+  const msg = document.getElementById("importMsg");
+  const code = input.value.trim();
+  if(!code){ msg.textContent = "Paste a backup code first."; return; }
+  const result = importBarCode(code);
+  if(!result.ok){ msg.textContent = result.error; return; }
+  input.value = "";
+  msg.textContent = "Restored. Your bar is back.";
+  updateHeadcountDisplay();
+  initFilterOptions();
+  populateCanonList();
+  populateBaseList();
+  renderCustomRecipeList();
+  document.getElementById("countFav").textContent = favorites.size;
+  renderAll();
+});
+
+rehydrateCustomCanon();
 initFilterOptions();
 populateCanonList();
 populateBaseList();
