@@ -288,6 +288,13 @@ color:var(--accent);cursor:pointer;font-family:'Inter',sans-serif;white-space:no
 </section>
 
 <section class="panel" data-tab="shelf">
+  <span class="eyebrow">On the Shelf</span>
+  <h2>Your Bottles</h2>
+  <p class="small" style="margin-top:4px">Everything currently counted as yours. Ran out of something? Flip it off — flip it back on the moment you restock.</p>
+  <div class="pantry-toggles" id="shelfToggles"></div>
+</section>
+
+<section class="panel" data-tab="shelf">
   <span class="eyebrow">The Shopping List</span>
   <h2>Worth Adding to the Shelf</h2>
   <p class="small" style="margin-top:4px">The single bottle that unlocks the most new pours.</p>
@@ -320,6 +327,7 @@ let pantryRows = SNAPSHOT.pantry;
 let dataSource = "snapshot";
 let fileHandle = null;
 let pantryOverrides = JSON.parse(localStorage.getItem("zachsBarPantryOverrides") || "{}");
+let shelfOverrides = JSON.parse(localStorage.getItem("zachsBarShelfOverrides") || "{}");
 let favorites = new Set(JSON.parse(localStorage.getItem("zachsBarFavorites") || "[]"));
 let shelfAdditions = new Set(JSON.parse(localStorage.getItem("zachsBarShelfAdditions") || "[]"));
 let pantryAdditions = new Set(JSON.parse(localStorage.getItem("zachsBarPantryAdditions") || "[]"));
@@ -576,8 +584,13 @@ function ownedSet(){
   const s = new Set();
   inventoryRows.forEach(r => {
     const canon = (r["Canonical"]||"").trim();
-    const inStock = String(r["In Stock"]||"").trim().toLowerCase();
-    if(canon && inStock === "yes") s.add(canon);
+    if(!canon) return;
+    if(shelfOverrides.hasOwnProperty(canon)){
+      if(shelfOverrides[canon]) s.add(canon);
+    } else {
+      const inStock = String(r["In Stock"]||"").trim().toLowerCase();
+      if(inStock === "yes") s.add(canon);
+    }
   });
   pantryRows.forEach(r => {
     const canon = (r["Canonical"]||"").trim();
@@ -589,7 +602,13 @@ function ownedSet(){
       if(inStock === "yes") s.add(canon);
     }
   });
-  shelfAdditions.forEach(c => s.add(c));
+  shelfAdditions.forEach(c => {
+    if(shelfOverrides.hasOwnProperty(c)){
+      if(shelfOverrides[c]) s.add(c);
+    } else {
+      s.add(c);
+    }
+  });
   pantryAdditions.forEach(c => s.add(c));
   return s;
 }
@@ -602,13 +621,13 @@ function statusLabel(r){
   return r.status==="now" ? "Ready to pour" : r.status==="one" ? "One bottle out" : r.status==="two" ? "Two bottles out" : r.missing.length + " bottles out";
 }
 
-function makeToggleRow(canon, label, on){
+function makeToggleRow(canon, label, on, overrides, storageKey){
   const row = document.createElement("div");
   row.className = "toggle-row";
   row.innerHTML = "<span>" + label + "</span><label class=\"switch\"><input type=\"checkbox\" " + (on?"checked":"") + " /><span class=\"switch-track\"></span></label>";
   row.querySelector("input").addEventListener("change", e => {
-    pantryOverrides[canon] = e.target.checked;
-    localStorage.setItem("zachsBarPantryOverrides", JSON.stringify(pantryOverrides));
+    overrides[canon] = e.target.checked;
+    localStorage.setItem(storageKey, JSON.stringify(overrides));
     renderAll();
   });
   return row;
@@ -623,13 +642,35 @@ function renderPantryToggles(){
     knownCanons.add(canon.toLowerCase());
     const defaultOn = String(r["In Stock"]||"").trim().toLowerCase() === "yes";
     const on = pantryOverrides.hasOwnProperty(canon) ? pantryOverrides[canon] : defaultOn;
-    el.appendChild(makeToggleRow(canon, r["Item"]||canon, on));
+    el.appendChild(makeToggleRow(canon, r["Item"]||canon, on, pantryOverrides, "zachsBarPantryOverrides"));
   });
   pantryAdditions.forEach(canon => {
     if(knownCanons.has(canon.toLowerCase())) return;
     const on = pantryOverrides.hasOwnProperty(canon) ? pantryOverrides[canon] : true;
-    el.appendChild(makeToggleRow(canon, canon, on));
+    el.appendChild(makeToggleRow(canon, canon, on, pantryOverrides, "zachsBarPantryOverrides"));
   });
+}
+function renderShelfToggles(){
+  const el = document.getElementById("shelfToggles");
+  if(!el) return;
+  el.innerHTML = "";
+  const knownCanons = new Set();
+  inventoryRows.forEach(r => {
+    const canon = (r["Canonical"]||"").trim();
+    if(!canon || knownCanons.has(canon.toLowerCase())) return;
+    knownCanons.add(canon.toLowerCase());
+    const defaultOn = String(r["In Stock"]||"").trim().toLowerCase() === "yes";
+    const on = shelfOverrides.hasOwnProperty(canon) ? shelfOverrides[canon] : defaultOn;
+    el.appendChild(makeToggleRow(canon, canon, on, shelfOverrides, "zachsBarShelfOverrides"));
+  });
+  shelfAdditions.forEach(canon => {
+    if(knownCanons.has(canon.toLowerCase())) return;
+    const on = shelfOverrides.hasOwnProperty(canon) ? shelfOverrides[canon] : true;
+    el.appendChild(makeToggleRow(canon, canon, on, shelfOverrides, "zachsBarShelfOverrides"));
+  });
+  if(!knownCanons.size && !shelfAdditions.size){
+    el.innerHTML = '<p class="small">Nothing on the shelf yet — add a bottle below.</p>';
+  }
 }
 function titleCase(s){
   return s.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
@@ -1184,6 +1225,7 @@ resultEl.innerHTML = html;
 function renderAll(){
   const owned = ownedSet();
   renderPantryToggles();
+  renderShelfToggles();
   renderROI(owned);
   renderCards(owned);
   if(pasteMode === "lines" && currentGuesses.length) computePasteResult();
